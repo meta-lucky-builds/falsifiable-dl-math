@@ -50,14 +50,21 @@ fit.
       work. H2 retired without an experiment, so E2.1 will not run.
 - [x] H3, sign updates on forward gradients: no estimator advantage. See
       `experiments/E3_0_forward_gradient_snr/RESULTS.md`
-- [ ] E1.1 implementation: `src/mai/attention.py`, `tests/test_attention.py`,
-      `experiments/E1_1_recall/`
-- [ ] E1.1 on Colab
+- [x] E1.1 implementation: `src/mai/attention.py`, `tests/test_attention.py`,
+      `experiments/E1_1_recall/`. 19/19 tests passed on Colab, smoke run clean.
+- [ ] E1.1 full run on Colab: launched 2026-11-04 as a background process, with
+      output `/content/mai/e11_results.jsonl`, log `/content/mai/e11_run.log`, flag
+      `--tune-seeds 1`, about 168 runs, projected about 5 hours. Rerunning the same
+      command resumes it, unless the runtime was reclaimed.
 - [ ] Analysis, then E1.2 score audit
+- [ ] H4, finite-epsilon Adam schedule law: derivation in progress, see
+      `hypotheses/H4_adam_epsilon_schedule_law.md` when it exists
 
 ## Next action
 
-Finish E1.1. If its files are missing, implement them from
-`hypotheses/H1_rem_attention_temperature.md`. Run tests and a smoke run on Colab
-first, then the full run as a background process. While it runs, pre-register the
-next item from the queue in `LEDGER.md`.
+While E1.1 runs, check the log at most hourly and print a progress count. At each
+check, once enough cells are done, save a compact CSV (arm, seed, noise, n, acc,
+needle_mass) into `experiments/E1_1_recall/` and push, because `/content` is lost if
+the runtime is reclaimed. Do not read full JSONL files into context: they are large.
+When it finishes, run `analyze.py`, commit its output, and apply the kill rule as
+pre-registered. Do not run other Colab jobs that would disturb its timing.
