@@ -46,13 +46,18 @@ fit.
 - [x] H1 and H2 pre-registered in `hypotheses/`, tracked in `LEDGER.md`
 - [x] E1.0 numeric check of the H1 formula: passed for Gaussian scores, broken by
       heavy tails. See `experiments/E1_0_rem_numeric/RESULTS.md`
-- [ ] Prior-art check for H1 and H2: `notes/lit/prior_art_H1_H2.md`
-- [ ] Implementations of E1.1 and E2.1
-- [ ] Colab experiments
-- [ ] Analysis
+- [x] Prior-art check: `notes/lit/prior_art_H1_H2.md`. H1 goes ahead as incremental
+      work. H2 retired without an experiment, so E2.1 will not run.
+- [x] H3, sign updates on forward gradients: no estimator advantage. See
+      `experiments/E3_0_forward_gradient_snr/RESULTS.md`
+- [ ] E1.1 implementation: `src/mai/attention.py`, `tests/test_attention.py`,
+      `experiments/E1_1_recall/`
+- [ ] E1.1 on Colab
+- [ ] Analysis, then E1.2 score audit
 
 ## Next action
 
-Read the prior-art verdicts. If `notes/lit/prior_art_H1_H2.md` is missing, redo that
-check. Then implement E1.1, including the Calib-Attn arm, and E2.1 for whichever
-hypotheses are still worth testing.
+Finish E1.1. If its files are missing, implement them from
+`hypotheses/H1_rem_attention_temperature.md`. Run tests and a smoke run on Colab
+first, then the full run as a background process. While it runs, pre-register the
+next item from the queue in `LEDGER.md`.

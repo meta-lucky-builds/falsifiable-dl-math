@@ -4,17 +4,21 @@ Every hypothesis stays here, including dead ones.
 
 | ID | Claim | Status | Evidence |
 |---|---|---|---|
-| H1 | REM closed form sets attention temperature and unifies SSMax scaling, REM criticality and the Bayes posterior | Open: maths check passed, no training evidence | E1.0: Gaussian needle mass within 0.021 of target at all tested `n` and ratios; heavy tails break it near threshold |
-| H2 | Gating Muon's spectrum at a measured noise edge beats Muon at small batch | Pre-registered | None yet |
+| H1 | REM closed form sets attention temperature and unifies SSMax scaling, REM criticality and the Bayes posterior | Open: maths check passed, no training evidence. Incremental: the physics is published, but the closed form and plug-in estimator were not found | E1.0: Gaussian needle mass within 0.021 of target at all tested `n` and ratios; heavy tails break it near threshold. Prior art: 2505.24333, 2610.34682, 2605.12697 |
+| H2 | Gating Muon's spectrum at a measured noise edge beats Muon at small batch | **Retired without an experiment** | 2610.07497 uses a similar construction and reports boosting the below-edge bulk beats flat Muon in 24 of 30 settings, though by only 0.077% of initial loss on average. Its modes are 93.7-97.1% below the edge, so a gate keeps very few. 2610.10965 reports top-only orthogonalization falls short. Not tested by us |
+| H3 | Sign updates improve forward-gradient estimates, as heavy-tail theory might suggest | **No estimator advantage for fixed `g`**; training not tested, thread deprioritized | E3.0: closed form and Monte Carlo agree. SNR is 1.00 raw, 0.80 tangent-normalized, 0.64 sign |
 
 ## Queue, not yet pre-registered
 
+- REM law for InfoNCE: how the best contrastive temperature moves with the number of
+  negatives. Prior-art check found no such law.
 - Harmonic loss is softmax on `-n log d`; test against plain distance logits
   (objectives survey G2).
-- Forward gradient with sign or Muon updates, given its heavy tails (objectives
-  survey G4).
 - Sparse Fenchel-Young losses under label noise. My expectation from the algebra is
   that they will not be robust: clean examples reach exactly zero gradient, which
   raises the relative weight of noisy ones. This runs against the survey's lead.
 - Closed-loop effective-learning-rate control with the `B_t` law on AdamW
   (optimization survey G1).
+- Per-band spectral step sizes for Muon, using cross-fit half-batch alignment and a
+  curvature estimate. This follows from the BulkBoost result, but the published effect
+  sizes are small and may not be measurable at CPU scale.
