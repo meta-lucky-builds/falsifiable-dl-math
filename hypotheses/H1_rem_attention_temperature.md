@@ -87,6 +87,19 @@ Kill: REM-Attn is not better than the best baseline at the longest two lengths,
 with paired 95% intervals excluding zero in its favor. A tie is reported as a tie,
 meaning a parameter-free rule that matches, not as a win.
 
+Amendment, 2026-11-04, before any E1.1 run. These details were fixed after the
+implementation was written and before any training:
+- Training length 8, tested to 256 (32x). Noise levels `eta` = 0, 0.6, 0.9. `kappa =
+  log 9`, fixed and untuned. The Calib-Attn arm is added.
+- The kill rule applies at each noise level, against the best of all six other arms
+  at each length. "Kill" means it fires at every level. "Partial" means it fires at
+  some levels, and it is not a win, because three levels give three chances with no
+  multiplicity correction.
+- This task uses independent keys, which matches H1's own assumptions and so favors
+  it. The short step budget also favors an arm with nothing to learn. **No REM win
+  counts until it also holds on fresh seeds with clustered distractors (`--dup-frac
+  0.5`).** If the kill fires, that run is skipped to save compute.
+
 **E1.2, score audit.** Measure score tails, `mu_hat / sigma_hat`, and how well the
 formula predicts learned SSMax temperatures in the trained E1.1 models.
 Kill for the explanatory claim: the formula predicts learned `beta` no better
