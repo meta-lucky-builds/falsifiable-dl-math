@@ -20,6 +20,14 @@ does not want to be asked about small decisions.
 - Work on branch `research/math-foundations`.
 - Spend usage carefully: narrow agent briefs, cheapest suitable model, no
   repeated searches. Do not lower the rigor rules in `README.md` to save usage.
+- Protect context: keep long outputs in files, and have agents return short
+  summaries. Keep this file current, so nothing depends on conversation memory.
+- Avoid local optima. When a kill criterion fires, record it and move on, without
+  patching the hypothesis to keep it alive. If two experiments in a row on one line
+  of work yield nothing, switch to a different line or a different kind of
+  mathematics. Refine or add hypotheses as evidence arrives, and pre-register each
+  one before it runs. Keep a mix of thread types in `LEDGER.md`, so the work never
+  depends on one idea.
 
 ## Open question for the owner
 
@@ -33,13 +41,18 @@ fit.
 
 ## Progress
 
-- [ ] Literature surveys: `notes/lit/optimization_geometry.md`,
+- [x] Literature surveys: `notes/lit/optimization_geometry.md`,
       `notes/lit/layers_algebra.md`, `notes/lit/objectives_information.md`
-- [ ] Hypotheses in `LEDGER.md`
-- [ ] Implementations
+- [x] H1 and H2 pre-registered in `hypotheses/`, tracked in `LEDGER.md`
+- [x] E1.0 numeric check of the H1 formula: passed for Gaussian scores, broken by
+      heavy tails. See `experiments/E1_0_rem_numeric/RESULTS.md`
+- [ ] Prior-art check for H1 and H2: `notes/lit/prior_art_H1_H2.md`
+- [ ] Implementations of E1.1 and E2.1
 - [ ] Colab experiments
 - [ ] Analysis
 
 ## Next action
 
-Finish the surveys. If a survey file is missing, redo only that thread.
+Read the prior-art verdicts. If `notes/lit/prior_art_H1_H2.md` is missing, redo that
+check. Then implement E1.1, including the Calib-Attn arm, and E2.1 for whichever
+hypotheses are still worth testing.

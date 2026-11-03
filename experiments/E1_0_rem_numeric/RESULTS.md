@@ -26,7 +26,7 @@ Identity checks:
   `mu = 50`, 0.0595 / 0.0595 at 200, and 0.0119 / 0.0119 at 1000.
 - Continuity at threshold: 4.8739 just below and 4.6654 just above, with threshold
   `mu` = 4.8788. This is continuous but has infinite slope from the square root, so
-  a 0.1% step in `mu` moves `beta*` by about 4%. **A plug-in estimator will be noisy
+  a 0.2% step in `mu` moves `beta*` by about 4%. **A plug-in estimator will be noisy
   near threshold.**
 - Scale equivariance: `beta*(30, 1) * 1 = beta*(60, 2) * 2 = 0.39937`.
 
