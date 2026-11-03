@@ -78,7 +78,7 @@ KAPPA = math.log(9.0)  # target mass 0.9, as in E1.0; fixed and untuned
 FULL = dict(train_n=8, factors=[1, 2, 4, 8, 16, 32], d_model=64, n_heads=2, d_ff=128, key_dim=32,
             n_values=16, batch=64, steps=2500, warmup=100, clip=1.0, lrs=[3e-4, 1e-3, 3e-3],
             noises=[0.0, 0.6, 0.9], tune_seeds=[0, 1], final_seeds=[100, 101, 102, 103, 104],
-            val_batches=32, test_batches=16, eval_batch=64, kappa=KAPPA, calib_p=0.9, dup_frac=0.0)
+            val_batches=32, test_batches=16, eval_batch=64, kappa=KAPPA, calib_p=0.9, calib_iters=12, dup_frac=0.0)
 SMOKE = dict(FULL, factors=[1, 4, 32], steps=30, warmup=5, lrs=[1e-3], noises=[0.6], tune_seeds=[0],
              final_seeds=[100], val_batches=1, test_batches=1)
 AUDIT_ROWS = 64
@@ -115,7 +115,8 @@ class RecallModel(nn.Module):
     def __init__(self, cfg, arm):
         super().__init__()
         d = cfg["d_model"]
-        kw = dict(normalizer=arm, train_n=cfg["train_n"], kappa=cfg["kappa"], calib_p=cfg["calib_p"])
+        kw = dict(normalizer=arm, train_n=cfg["train_n"], kappa=cfg["kappa"], calib_p=cfg["calib_p"],
+                  calib_iters=cfg["calib_iters"])
         self.key_in = nn.Linear(cfg["key_dim"], d)
         self.val_in = nn.Embedding(cfg["n_values"], d)
         self.query_type = nn.Parameter(0.02 * torch.randn(d))

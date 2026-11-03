@@ -99,6 +99,9 @@ implementation was written and before any training:
   it. The short step budget also favors an arm with nothing to learn. **No REM win
   counts until it also holds on fresh seeds with clustered distractors (`--dup-frac
   0.5`).** If the kill fires, that run is skipped to save compute.
+- Measured smoke timing projected far over the estimate, so before launch: one tuning
+  seed per noise level for every arm (`--tune-seeds 1`), and 12 bisection iterations
+  for Calib-Attn. Steps and final seeds are unchanged.
 
 **E1.2, score audit.** Measure score tails, `mu_hat / sigma_hat`, and how well the
 formula predicts learned SSMax temperatures in the trained E1.1 models.
