@@ -234,7 +234,8 @@ def part_b():
     worst = dict(step=0.0, N=0.0, Phi=0.0, Psi=0.0, inv=0.0, tan=0.0)
     for eps in [1e-8, 1e-3, 1.0]:
         fc1 = nn.Linear(20, 16, bias=False)
-        bn = nn.BatchNorm1d(16, eps=0.0, affine=False, track_running_stats=False)
+        # torch rejects eps=0. Against a variance near 1 this is exactly 0 in float64; B5 checks it.
+        bn = nn.BatchNorm1d(16, eps=1e-300, affine=False, track_running_stats=False)
         fc2 = nn.Linear(16, 3)
         params = list(fc1.parameters()) + list(fc2.parameters())
         opt = torch.optim.AdamW(params, lr=eta, betas=(b1, b2), eps=eps, weight_decay=lam)
