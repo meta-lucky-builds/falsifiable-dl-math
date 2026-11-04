@@ -90,6 +90,23 @@ Found while implementing, with no data seen. This replaces the gated clause abov
   not the same as a bf16-only setup.
 - Probe inputs are all 2048 bytes, so only the distance changes.
 
+## Amendment 2, 2026-11-04, before any run: smaller and cheaper
+
+The owner asked for less compute. This replaces the corresponding values above.
+
+- **Model:** width 192, still 6 layers and 6 heads, about 2.7M parameters. **Steps:** 20000, about 3.6
+  passes over the training text. Warmup, batch, context and the learning-rate grid are unchanged.
+- **Final seeds:** 4, so 28 runs in total. Not fewer: with Holm correction the strictest test needs
+  a one-sided t near 4 with 4 seeds, against about 7 with 3.
+- **P1, P2, P3 now have three outcomes**, since a miss at 4 seeds may only mean too little data:
+  - **Supported:** significant under Holm.
+  - **Inconclusive:** not significant, but mean gain at least 0.005 bits per byte. It needs new seeds
+    to settle. Those would be a separate confirmatory run, not pooled with these.
+  - **Not supported:** not significant, and mean gain under 0.005 bits per byte. For P1, this is the
+    kill for transfer of E1.1.
+- **Scale caveat.** Prior claims for these methods come from larger models, so a null here is weaker
+  evidence against them than it would be at 10M.
+
 ## What it cannot show
 
 One dataset, one size and byte-level tokens. A win here is not a result about large language
