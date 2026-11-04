@@ -58,8 +58,10 @@ reload them with ToolSearch and call `open_colab_browser_connection`.
 
 ## Next action
 
-Finish H5: implement E5.1 if its files are missing, run tests and a smoke run on Colab,
-then launch in the background, writing to `/content/mai/`.
+E5.1 code is in `experiments/E5_1_swap/`. It runs on Colab in the background, with output
+`/content/mai/e51_results.jsonl` and log `/content/mai/e51_run.log`. If neither exists, run
+tests and a smoke run, then launch it. Rerunning the same command resumes it. When it
+finishes, run `analyze.py`, and record the reading it prints, as pre-registered.
 
 No hypothesis so far has produced a win. H5 is one mechanism question, in the same
 attention line as H1. After it, per the rule above, the next thread must be a different
