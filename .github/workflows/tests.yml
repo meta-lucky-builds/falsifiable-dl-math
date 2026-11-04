@@ -1,0 +1,30 @@
+name: tests
+
+on:
+  push:
+    branches: [main, research/math-foundations]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU torch, numpy and scipy
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy scipy
+      - name: Normalizer tests
+        run: python tests/test_attention.py
+      - name: Readout swap tests
+        run: python tests/test_swap.py
+      - name: E7 pipeline tests
+        run: python tests/test_e7.py
+      - name: E8 tests
+        run: python tests/test_e8.py
+      - name: E8 mini run and report
+        run: bash experiments/E8_long_context/run.sh --mini --out /tmp/e8chk
