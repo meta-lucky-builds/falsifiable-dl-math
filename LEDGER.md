@@ -11,6 +11,7 @@ Every hypothesis stays here, including dead ones.
 | H5 | Entmax15's gain on recall comes mainly from training or mainly from the sparse readout | **Launched, result not recorded** | Suggested by E1.1, so it uses fresh seeds. See `experiments/E5_1_swap/RESULTS.md` |
 | H6 | In diagonal nets, decay-then-off reaches the same limit as a small init, and small init gets there in no more steps | **Launched, only Part A read** (exact identities pass, about 1e-13; log not archived) | Different area: implicit bias. Diagonal linear models only. See `experiments/E6_0_decay_budget/RESULTS.md` |
 | H7 | Attention normalizers on long contexts in a real language model | **Run, but did not test the question.** Pre-registered outcomes: P1 not supported, P2 inconclusive, P3 not supported | All arms break at 2x training length (1.39 to about 5.2 bits per byte), likely from my RoPE choice. A naive entmax readout costs 0.26 bits per byte at `N = 256`. See `experiments/E7_gpu/RESULTS.md` |
+| H8 | Why byte-level models break past training length: position scheme, or a bug | **Pre-registered, ready to run on GPUs** | Reviewed and amended before any real data. CI passes on CPU only. See `hypotheses/H8_long_context_failure.md` |
 
 ## Queue, not yet pre-registered
 

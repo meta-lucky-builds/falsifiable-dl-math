@@ -15,7 +15,8 @@ does not want to be asked about small decisions.
 - Models, all at medium effort: Opus 5.5 for thinking and implementation,
   Sonnet 5.5 for execution of finished code and web search, Haiku 5.5 for simple
   retrieval.
-- Never run tests or experiments locally, even CPU ones. Use the Colab MCP.
+- Never run tests or experiments locally, even CPU ones. Use the Colab MCP, or GitHub Actions
+  (`.github/workflows/tests.yml`), which runs every test on each push.
 - Never put a GitHub token in Colab. Send code by writing cells.
 - Work on branch `research/math-foundations`. `main` holds the same history and is only ever
   fast-forwarded from it.
@@ -60,14 +61,12 @@ reload them with ToolSearch and call `open_colab_browser_connection`.
 
 ## Current priority, set by the owner: waiting on the owner
 
-The owner limited work to H7 and has not lifted that. H7 is finished and recorded. Its likely
-cause, RoPE `theta = 10000` at training length 256, is unconfirmed and a code bug is not ruled out.
-
-The owner has been asked whether to build a small diagnostic: loss per row across a long window, for
-RoPE at more than one `theta` and a scheme with no wraparound such as ALiBi. It needs its own
-pre-registration (H8) and fresh seeds. Do not start it, or any other thread, until the owner answers.
-If the owner runs anything on a rented machine, give one command for a Jupyter terminal, print results
-on screen, and never say the instance can be destroyed before the results are copied.
+The owner approved the diagnostic for E7's long-context failure. H8
+(`hypotheses/H8_long_context_failure.md`, code in `experiments/E8_long_context/`) is pre-registered,
+independently reviewed, amended and passing in CI. It has never run on a GPU. The owner runs it on rented
+GPUs and pastes back the report. Then apply H8's reading rules in order, starting with C0. Do not start
+other threads until the owner says so. For anything on a rented machine, give one command for a Jupyter
+terminal, print results on screen, and never say the instance can be destroyed before the results are copied.
 
 ## Next action, once the owner lifts the H7 limit
 

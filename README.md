@@ -4,7 +4,7 @@ Testing mathematical changes to standard deep learning. Each idea is derived by 
 numerically, pre-registered with a kill criterion, and then compared against tuned baselines over
 paired seeds. Failed ideas stay on record, with the reason they failed.
 
-**Where it stands (2026-11-04).** Seven hypotheses opened. **No new method from this project has beaten
+**Where it stands (2026-11-04).** Eight hypotheses opened, one of them waiting to run. **No new method from this project has beaten
 a tuned baseline so far.** The useful output is verified mathematics, some clear negative results, and
 one strong lead on an existing method that has not yet been shown on real text.
 
@@ -74,8 +74,8 @@ is better at long context.** The same models score about 1.39 when given only th
 truncated-context control is what exposed this: extra context made predictions worse.
 
 The likely cause is a design choice made here, RoPE with `theta = 10000` at training length 256. **This is
-not confirmed**, and a code bug is not ruled out. A small diagnostic is
-[specified](experiments/E7_gpu/RESULTS.md#what-would-actually-test-the-question) but not built.
+not confirmed**, and a code bug is not ruled out. [H8](hypotheses/H8_long_context_failure.md) is built to tell
+these apart, and has not run yet.
 
 ### 5. Adam's epsilon has an exact recursion, and it is not an effective-LR schedule at equilibrium
 
@@ -132,6 +132,7 @@ in [the prior-art note](notes/lit/prior_art_H1_H2.md).
 | H5 | Does entmax's gain come from training or from readout? | **Launched, result not recorded** | [hypothesis](hypotheses/H5_sparsity_train_or_inference.md), [E5.1](experiments/E5_1_swap/RESULTS.md) |
 | H6 | In diagonal nets, is decay-then-off the same as a small init? | **Launched, partly read** | [hypothesis](hypotheses/H6_decay_budget_vs_small_init.md), [E6.0](experiments/E6_0_decay_budget/RESULTS.md) |
 | H7 | Do attention normalizers help long contexts on real text? | **Ran, did not test its question** | [hypothesis](hypotheses/H7_gpu_attention_on_real_text.md), [E7](experiments/E7_gpu/RESULTS.md) |
+| H8 | Why do models break past training length: position scheme, or a bug? | **Ready to run on GPUs** | [hypothesis](hypotheses/H8_long_context_failure.md), [code](experiments/E8_long_context/e8.py) |
 
 [LEDGER.md](LEDGER.md) has the evidence for each, plus the queue of ideas not yet pre-registered.
 
@@ -195,12 +196,18 @@ The numeric checks are standalone scripts. For example:
 python experiments/E1_0_rem_numeric/check.py
 ```
 
-The GPU experiment checks the machine, runs a smoke stage and then the full run. It resumes if rerun, and
-prints its results on screen when it finishes.
+The GPU experiments check the machine, run a smoke stage and then the full run. They resume if rerun, and
+print their results on screen when they finish.
 
 ```bash
 bash experiments/E7_gpu/run.sh
 ```
+
+```bash
+bash experiments/E8_long_context/run.sh
+```
+
+GitHub Actions runs every test, plus a small E8 run, on each push.
 
 The recorded runs used Colab CPU, except E7, which used 4x RTX 5090 on a rented machine. Wall-clock timings
 from the shared Colab runtime are not clean.
@@ -216,8 +223,8 @@ from the shared Colab runtime are not clean.
 
 ## What is next
 
-1. **Find out why long contexts fail.** Measure loss per row across a long window, for RoPE at several `theta`
-   values and for ALiBi. Normalizers can only be compared on real text once a setup survives past training length.
+1. **Find out why long contexts fail.** Run H8. Normalizers can only be compared on real text once a setup survives
+   past training length.
 2. **Read out H5 and H6**, rerunning them if their files are gone.
 3. **Move to different mathematics.** Candidates from the surveys are 1-D Wasserstein logit losses and how
    contrastive temperature should scale with the number of negatives.
