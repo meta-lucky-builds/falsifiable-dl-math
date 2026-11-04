@@ -7,6 +7,23 @@ set -euo pipefail
 
 die() { echo; echo "ERROR: $*" >&2; exit 1; }
 
+# Results live only on this machine, so put them on screen too: an instance can be destroyed.
+show_results() {
+  local dir="$1"
+  tar czf "$dir/e7_results.tar.gz" -C "$dir" report.txt results_compact.csv selection.json jobs 2>/dev/null || true
+  echo
+  echo "=================== COPY EVERYTHING FROM HERE ==================="
+  cat "$dir/report.txt"
+  echo
+  echo "---------------------- results_compact.csv ----------------------"
+  cat "$dir/results_compact.csv"
+  echo "=================== COPY EVERYTHING TO HERE ====================="
+  echo
+  echo "!!! NOTHING IS UPLOADED ANYWHERE. These results exist only on this machine. !!!"
+  echo "!!! Do NOT destroy the instance until you have copied the text above.       !!!"
+  echo "    Everything, including per-job files: $dir/e7_results.tar.gz"
+}
+
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
 E7="$HERE/e7.py"
@@ -52,9 +69,8 @@ if [ "$MINI" = 1 ]; then
   MINI_OUT="${OUT}_mini"
   "$PY" "$E7" --mini --out "$MINI_OUT" ${EXTRA[@]+"${EXTRA[@]}"} || die "the mini run failed. Logs: $MINI_OUT/logs"
   "$PY" "$ANALYZE" --out "$MINI_OUT" || die "analysis of the mini run failed."
+  show_results "$MINI_OUT"
   echo; echo "Mini run finished."
-  echo "  report:  $MINI_OUT/report.txt"
-  echo "  results: $MINI_OUT/results_compact.csv"
   exit 0
 fi
 
@@ -74,14 +90,12 @@ STATUS=0
 echo; echo "=== Analysis ==="
 "$PY" "$ANALYZE" --out "$OUT" || die "analysis failed. Job results are safe in $OUT/jobs"
 
+show_results "$OUT"
 echo
 if [ "$STATUS" != 0 ]; then
-  echo "ERROR: some jobs did not finish (exit $STATUS). The report below is partial." >&2
+  echo "ERROR: some jobs did not finish (exit $STATUS). The report above is partial." >&2
   echo "Run the same command again to resume and retry them. Logs: $OUT/logs" >&2
 else
   echo "E7 finished."
 fi
-echo "  report:  $OUT/report.txt"
-echo "  results: $OUT/results_compact.csv"
-echo "  jobs:    $OUT/jobs/"
 exit "$STATUS"
