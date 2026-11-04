@@ -1,0 +1,3 @@
+# torch (2.3 or newer, CUDA build) is expected to be present; run.sh installs it if absent.
+numpy
+scipy

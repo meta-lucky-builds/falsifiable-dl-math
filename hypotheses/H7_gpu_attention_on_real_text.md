@@ -72,6 +72,24 @@ level 0.05, using t-tests on the mean over `N` in {1024, 2048}:
 - **Cost:** report `L(256)`, wall time per step and tokens per second per arm.
 - Copy-probe differences are secondary and reported with intervals, without correction.
 
+## Amendment, 2026-11-04, before any run
+
+Found while implementing, with no data seen. This replaces the gated clause above.
+
+- **Row-level gate.** The window-level gate I specified makes that clause identical to P3, so it
+  could never fail. The gated readout is now per row: softmax for rows with `n <= 256`, and
+  entmax15 for rows with `n > 256`. It equals softmax exactly at `N = 256`.
+- **The readout swap succeeds** only if P3 is significant, and either `L(256)` rises by under 0.005
+  bits per byte, or **P3b** holds: gated has lower `L` than softmax readout on the mean over `N` in
+  {1024, 2048}, one-sided paired t-test at 0.05. P3b is tested only if P3 is significant, so it
+  adds no new chance of a false positive to the family.
+- Fixed SSMax readout equals softmax on rows with `n = 256`, not across a whole window of length 256.
+- `T(256)` sees bytes before the window, so `G` is read only for `N > 256`.
+- Validation and test run in float32. Training is bf16, with the attention core, whose cumulative
+  sums are too coarse in bf16, kept in float32 for every arm. This may help sparse arms, and it is
+  not the same as a bf16-only setup.
+- Probe inputs are all 2048 bytes, so only the distance changes.
+
 ## What it cannot show
 
 One dataset, one size and byte-level tokens. A win here is not a result about large language
