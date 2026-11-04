@@ -56,7 +56,15 @@ reload them with ToolSearch and call `open_colab_browser_connection`.
 - [ ] H5, entmax on recall, training or inference: pre-registered in `hypotheses/`.
       Implementation: `experiments/E5_1_swap/`
 
-## Next action
+## Current priority, set by the owner: H7 only
+
+H7 (`hypotheses/H7_gpu_attention_on_real_text.md`, code in `experiments/E7_gpu/`) is built,
+reviewed and validated on CPU at commit `28974b8`. The owner runs `bash experiments/E7_gpu/run.sh`
+on rented GPUs and sends back `runs/e7/report.txt`. It has never run on a GPU. Wait for that
+report, or for smoke output to debug. Then apply the pre-registered reading rules. Do not start
+other threads until the owner says so.
+
+## Next action, once H7 is done
 
 E5.1 code is in `experiments/E5_1_swap/`. It runs on Colab in the background, with output
 `/content/mai/e51_results.jsonl` and log `/content/mai/e51_run.log`. If neither exists, run
