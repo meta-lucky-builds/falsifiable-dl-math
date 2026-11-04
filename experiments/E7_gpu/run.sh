@@ -82,6 +82,8 @@ echo; echo "=== Smoke stage ==="
   || die "the smoke stage failed, so the full run will not start. Logs: $SMOKE_OUT/logs"
 "$PY" "$ANALYZE" --out "$SMOKE_OUT" \
   || die "analysis failed in the smoke stage, so the full run will not start."
+show_results "$SMOKE_OUT" > /dev/null \
+  || die "printing results failed in the smoke stage, so the full run will not start."
 
 echo; echo "=== Full experiment ==="
 STATUS=0
