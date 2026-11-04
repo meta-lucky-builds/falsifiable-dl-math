@@ -10,6 +10,7 @@ Every hypothesis stays here, including dead ones.
 | H4 | Finite Adam epsilon gives a closed recursion and a crossover scale `r* = G/(eps sqrt d)`. My stronger conjecture, that epsilon acts as an effective-LR schedule, is expected to fail: equilibrium rotation should not depend on epsilon | **Stopped: pre-registered kill fired on `omega(x)`, E4.1 not run** | E4.0: exact recursion confirmed to about 1e-14, including against real AdamW. On a noise walk, equilibrium rotation does not depend on epsilon (within 0.13%) and `r_eq` and the transit law hold, but `omega` missed by 18.8% against a 15% limit. Toy model only; no route to a speedup |
 | H5 | Entmax15's gain on recall comes mainly from training or mainly from the sparse readout | Pre-registered, not yet run | Suggested by E1.1, so it uses fresh seeds |
 | H6 | In diagonal nets, decay-then-off reaches the same limit as a small init, and small init gets there in no more steps | Pre-registered, derivation by hand, not yet run | Different area: implicit bias. Diagonal linear models only |
+| H7 | Attention normalizers on long contexts in a real language model | **Run, but did not test the question.** Pre-registered outcomes: P1 not supported, P2 inconclusive, P3 not supported | All arms break at 2x training length (1.39 to about 5.2 bits per byte), likely from my RoPE choice. A naive entmax readout costs 0.26 bits per byte at `N = 256`. See `experiments/E7_gpu/RESULTS.md` |
 
 ## Queue, not yet pre-registered
 
