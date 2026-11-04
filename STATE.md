@@ -15,8 +15,9 @@ does not want to be asked about small decisions.
 - Models, all at medium effort: Opus 5.5 for thinking and implementation,
   Sonnet 5.5 for execution of finished code and web search, Haiku 5.5 for simple
   retrieval.
-- Never run tests or experiments locally, even CPU ones. Use the Colab MCP, or GitHub Actions
-  (`.github/workflows/tests.yml`), which runs every test on each push.
+- Never run tests or experiments locally, even CPU ones. Use the Colab MCP, or start GitHub Actions
+  (`.github/workflows/tests.yml`) by hand. On 2026-11-04 GitHub refused to start Actions jobs because of a
+  billing problem on the account, so check that first.
 - Never put a GitHub token in Colab. Send code by writing cells.
 - Work on branch `research/math-foundations`. `main` holds the same history and is only ever
   fast-forwarded from it.

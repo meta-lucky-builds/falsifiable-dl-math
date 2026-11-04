@@ -6,8 +6,7 @@ Every idea here gets a derivation, a numeric check, a kill criterion written bef
 equally tuned baselines on paired seeds. Everything stays in the repo, including the ideas that died and the mistakes I
 made along the way.
 
-[![tests](https://github.com/meta-lucky-builds/mai/actions/workflows/tests.yml/badge.svg)](https://github.com/meta-lucky-builds/mai/actions/workflows/tests.yml)
-&nbsp; 8 hypotheses &nbsp;·&nbsp; 5 literature surveys &nbsp;·&nbsp; 9 experiments &nbsp;·&nbsp; 3 runs on real GPUs
+**8 hypotheses** &nbsp;·&nbsp; **8 experiments** &nbsp;·&nbsp; **5 literature notes** &nbsp;·&nbsp; **2 experiments on real GPUs**
 
 ## The headline
 
@@ -182,7 +181,7 @@ and reports that *boosting* below-edge modes helps. Spectrally Targeted Muon (26
 
 ## Reproducing
 
-Requires Python 3.9+, `torch >= 2.3`, `numpy` and `scipy`. The tests have their own runners, and GitHub Actions runs them all on each push, plus a small E8 run.
+Requires Python 3.9+, `torch >= 2.3`, `numpy` and `scipy`. The tests have their own runners. A [GitHub Actions workflow](.github/workflows/tests.yml), started by hand, runs them all plus a small E8 run. Its last run, at `bb4635f`, the commit that produced the E8 results, passed.
 
 ```bash
 python tests/test_e8.py
