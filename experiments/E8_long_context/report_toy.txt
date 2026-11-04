@@ -1,0 +1,104 @@
+E8 report: toy
+
+TOY RUN: 2 seeds and 6000 steps. It sets a direction only. Any claim about a cause or a fix, and any
+next step printed below, needs the full run first. Long-context gains are reported, not read.
+
+Runs finished: 8 of 8.
+Non-finite training steps: 0. Evaluation windows: ['55886754'] (one value means all alike).
+Check, |E(256)| must be near zero: largest 0.00e+00
+
+Bits per byte, mean over seeds. E(N) = L(N) - Lw(N), paired on the same targets. ratio is C3's per-token weight, far over near.
+arm            L(256)  L(512)  L(1024)  L(2048)  E(512)  E(1024)  E(2048)      T  T-L(2048)  ratio    val
+-------------  ------  ------  -------  -------  ------  -------  -------  -----  ---------  -----  -----
+alibi           1.475   1.464    1.421    1.444  -0.021   -0.044   -0.039  1.483     +0.039   0.25  1.642
+control_ctx4x   1.486   1.466    1.419    4.513  +0.000   +0.000   +3.068  1.441     -3.072   0.38  1.535
+rope_1e4        1.480   3.918    4.637    5.128  +2.425   +3.170   +3.640  1.488     -3.640  22.05  1.635
+rope_5e5        1.486   4.764    5.199    5.277  +3.265   +3.726   +3.785  1.492     -3.785  27.88  1.634
+
+Reading rules, fixed in the pre-registration
+C0 measurement, alibi: Lw(2048) 1.483, T 1.483, limit T + 0.03: PASS
+C0 measurement, control_ctx4x: Lw(2048) 1.444, T 1.441, limit T + 0.03: PASS
+C0 measurement, rope_1e4: Lw(2048) 1.488, T 1.488, limit T + 0.03: PASS
+C0 measurement, rope_5e5: Lw(2048) 1.493, T 1.492, limit T + 0.03: PASS
+C1 positive control: control L(1024) 1.419, limit 1.567 (base Lw(1024) 1.467 + 0.1): PASS
+C2 reproduction: base L(512) 3.918, E(512) +2.425, needs at least 1.0: PASS
+C3 mechanism: base per-token weight, far over near, at N = 512: 22.05, needs at least 2.0: SUPPORTED
+
+  alibi            survives, worst bin E -0.007; best E(1024) -0.044 [-0.084, -0.003]: long context useful
+  control_ctx4x    fails, worst bin E +3.068
+  rope_1e4         fails, worst bin E +3.660
+  rope_5e5         fails, worst bin E +4.150
+
+E7's claim about RoPE: SUPPORTED. The base fails, and linear decay survives in ['alibi'].
+  rope_5e5 fails, so raising theta alone is not enough.
+Next, per H8: pre-register a normalizer comparison on one of ['alibi'], with fresh seeds.
+
+Loss per row, bits per byte. A jump just past the training length is the failure.
+row bin end  alibi  control_ctx4x  rope_1e4  rope_5e5
+-----------  -----  -------------  --------  --------
+64            1.82           1.88      1.81      1.81
+128           1.57           1.60      1.57      1.57
+192           1.52           1.53      1.52      1.53
+256           1.48           1.49      1.48      1.49
+320           1.50           1.50      1.61      2.77
+384           1.47           1.47      2.79      4.36
+448           1.46           1.45      3.56      4.62
+512           1.46           1.47      3.92      4.76
+576           1.44           1.44      4.14      4.86
+640           1.44           1.43      4.59      4.95
+704           1.43           1.43      4.76      5.42
+768           1.44           1.43      4.81      5.57
+1024          1.42           1.42      4.64      5.20
+1280          1.46           1.92      4.92      5.17
+1536          1.44           3.08      4.79      5.56
+1792          1.45           3.90      4.95      5.35
+2048          1.44           4.51      5.13      5.28
+
+Attention mass on distances at or past the arm's training context, by layer.
+arm               N  layer0  layer1  layer2  layer3  layer4  layer5
+-------------  ----  ------  ------  ------  ------  ------  ------
+alibi           512   0.055   0.055   0.059   0.060   0.054   0.054
+alibi          1024   0.073   0.073   0.071   0.071   0.073   0.073
+alibi          2048   0.075   0.075   0.073   0.072   0.074   0.077
+control_ctx4x   512   0.000   0.000   0.000   0.000   0.000   0.000
+control_ctx4x  1024   0.000   0.000   0.000   0.000   0.000   0.000
+control_ctx4x  2048   0.486   0.795   0.838   0.854   0.909   0.716
+rope_1e4        512   0.411   0.793   0.636   0.702   0.787   0.551
+rope_1e4       1024   0.634   0.961   0.881   0.939   0.909   0.801
+rope_1e4       2048   0.809   0.993   0.960   0.977   0.969   0.890
+rope_5e5        512   0.654   0.807   0.654   0.805   0.767   0.704
+rope_5e5       1024   0.832   0.986   0.865   0.917   0.941   0.896
+rope_5e5       2048   0.929   0.997   0.928   0.966   0.972   0.948
+
+Where attention mass goes on the last 64 rows, by distance, mean over layers.
+arm             0-16  16-64  64-256  256-512  512-1024  1024-2048
+-------------  -----  -----  ------  -------  --------  ---------
+alibi          0.524  0.223   0.179    0.051     0.021      0.003
+control_ctx4x  0.121  0.033   0.039    0.017     0.024      0.766
+rope_1e4       0.046  0.010   0.012    0.097     0.206      0.630
+rope_5e5       0.022  0.009   0.012    0.078     0.256      0.623
+
+Mean logit relative to the row's top, by distance. Far above near means aliasing.
+arm             0-16   16-64  64-256  256-512  512-1024  1024-2048
+-------------  -----  ------  ------  -------  --------  ---------
+alibi          -2.67   -6.28  -19.39   -43.87    -85.80    -168.00
+control_ctx4x  -6.24   -8.35  -10.19   -12.07    -12.12      -7.67
+rope_1e4       -8.87  -11.68  -13.70    -9.39    -10.15      -9.80
+rope_5e5       -9.40  -12.41  -14.06   -10.60    -10.44     -10.69
+
+Copy probe, byte accuracy. Guessing in the alphabet gives about 0.016.
+arm             D=32   D=64  D=128  D=200  D=400  D=800  D=1600
+-------------  -----  -----  -----  -----  -----  -----  ------
+alibi          0.295  0.276  0.246  0.214  0.135  0.042   0.006
+control_ctx4x  0.226  0.189  0.184  0.153  0.098  0.009   0.010
+rope_1e4       0.219  0.200  0.163  0.094  0.015  0.016   0.010
+rope_5e5       0.159  0.151  0.117  0.085  0.027  0.014   0.012
+
+Cost
+arm            context  batch  step ms  tokens/s
+-------------  -------  -----  -------  --------
+alibi              256     64     30.3    540354
+control_ctx4x     1024     16     74.2    220875
+rope_1e4           256     64     68.1    240607
+rope_5e5           256     64     68.1    240611
+

@@ -1,6 +1,6 @@
 # H8: why do byte-level models break past their training length?
 
-Status: pre-registered 2026-11-04, before any E8 run. This is a diagnostic. It compares positional schemes
+Status: pre-registered 2026-11-04, before any E8 run. Toy run done, see `experiments/E8_long_context/RESULTS.md`. This is a diagnostic. It compares positional schemes
 to find a setup that survives past training length. It does not compare attention normalizers, and a win
 here is not a claim that any scheme is better in general.
 
@@ -23,7 +23,7 @@ text is near 5, so those rows predict about as well as byte frequencies alone. E
 `theta = 10000`, without evidence.
 
 **The size of the failure is a warning.** GOAT (2601.15380) reports RoPE going from perplexity 20.82 to 28.53
-at 2x its training length, about +0.45 bits. Ours is +3.8 bits. That gap could come from our scale or task, but it
+at 2x its training length, about +0.45 bits. Mine is +3.8 bits. That gap could come from my scale or task, but it
 could also be a bug. So this design has to be able to catch a bug, and not only to confirm the RoPE story.
 
 Doubling the row length cannot explain this through the token count alone, since doubling `n` costs at most
@@ -120,13 +120,13 @@ synthetic text, whose numbers mean nothing. This replaces the corresponding rule
 - **"Useful" is read at every `N` past `W`,** as the original text says. `T - L(2048)` is also reported. Stacked layers
   give `Lw` a reach of several `W`, so `E` understates the value of long context, and the conclusion "no gain" means no gain
   over windowed attention only.
-- **An arm that survives only with a short-context cost** has no automatic next step. The report says so and the owner decides.
+- **An arm that survives only with a short-context cost** has no automatic next step. The report says so and I decide.
 - **Limitation kept.** Running out of memory during a recorded pass can weight some windows twice in the attention
   statistics. Each row stays normalized, so this affects only the statistics, and only if it happens.
 
 ## Amendment 2, 2026-11-04, before any real run: a toy run comes first
 
-The owner asked for the smallest test that is still somewhat reliable, as quick as possible, on one RTX 5090. The toy run
+I wanted the smallest test that is still somewhat reliable, as quick as possible, on one RTX 5090. The toy run
 comes first, and the full design above stays available.
 
 - **Toy settings.** Same model and data. 6000 steps with 500 warmup, seeds 3000 and 3001, 512 test windows, 128 recorded

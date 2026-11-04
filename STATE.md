@@ -61,12 +61,11 @@ reload them with ToolSearch and call `open_colab_browser_connection`.
 
 ## Current priority, set by the owner: waiting on the owner
 
-The owner approved the diagnostic for E7's long-context failure. H8
-(`hypotheses/H8_long_context_failure.md`, code in `experiments/E8_long_context/`) is pre-registered,
-independently reviewed, amended and passing in CI. It has never run on a GPU. The owner runs it on rented
-GPUs and pastes back the report. Then apply H8's reading rules in order, starting with C0. Do not start
-other threads until the owner says so. For anything on a rented machine, give one command for a Jupyter
-terminal, print results on screen, and never say the instance can be destroyed before the results are copied.
+The H8 toy run is done and recorded in `experiments/E8_long_context/RESULTS.md`: no sign of a bug, ALiBi holds to
+8x training length, RoPE fails, and raising `theta` makes it worse. It sets a direction only. The next step, for the
+owner to decide, is the full E8 run, which needs GPU time. Do not start other threads until the owner says so. For
+anything on a rented machine, give one command for a Jupyter terminal, print results on screen, and never say the
+instance can be destroyed before the results are copied.
 
 ## Next action, once the owner lifts the H7 limit
 

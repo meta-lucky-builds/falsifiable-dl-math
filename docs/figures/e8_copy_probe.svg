@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 400" role="img" aria-label="Copy accuracy against distance. At distance 400, ALiBi trained on 256 still retrieves at about 0.135, while RoPE trained on 256 is at chance.">
+<style>
+.bg{fill:#fcfcfb}.t1{fill:#0b0b0b}.t2{fill:#52514e}.grid{stroke:#e4e3df}.ref{stroke:#8a8984}
+.alibi{stroke:#2a78d6}.rope_1e4{stroke:#eb6834}.rope_5e5{stroke:#1baf7a}.control_ctx4x{stroke:#eda100}
+@media (prefers-color-scheme: dark){.bg{fill:#1a1a19}.t1{fill:#f4f3ef}.t2{fill:#b5b4ae}.grid{stroke:#383835}.ref{stroke:#7c7b76}
+.alibi{stroke:#3987e5}.rope_1e4{stroke:#d95926}.rope_5e5{stroke:#199e70}.control_ctx4x{stroke:#c98500}}
+text{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:13px}
+.title{font-size:16px;font-weight:600}.line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+</style>
+<rect width="880" height="400" rx="8" class="bg"/>
+<text x="62.0" y="28.0" class="title t1" text-anchor="start">ALiBi still retrieves a planted string at distances it never trained on</text>
+<line x1="62.0" y1="53.0" x2="80.0" y2="53.0" class="line alibi"/>
+<text x="86.0" y="57.0" class="t2" text-anchor="start">ALiBi, trained on 256</text>
+<line x1="246.7" y1="53.0" x2="264.7" y2="53.0" class="line rope_1e4"/>
+<text x="270.7" y="57.0" class="t2" text-anchor="start">RoPE, trained on 256</text>
+<line x1="424.7" y1="53.0" x2="442.7" y2="53.0" class="line rope_5e5"/>
+<text x="448.7" y="57.0" class="t2" text-anchor="start">RoPE, 50x theta, trained on 256</text>
+<line x1="676.4" y1="53.0" x2="694.4" y2="53.0" class="line control_ctx4x"/>
+<text x="700.4" y="57.0" class="t2" text-anchor="start">RoPE, trained on 1024</text>
+<line x1="62" x2="730" y1="344.0" y2="344.0" class="grid"/>
+<text x="52.0" y="348.0" class="t2" text-anchor="end">0.0</text>
+<line x1="62" x2="730" y1="260.0" y2="260.0" class="grid"/>
+<text x="52.0" y="264.0" class="t2" text-anchor="end">0.1</text>
+<line x1="62" x2="730" y1="176.0" y2="176.0" class="grid"/>
+<text x="52.0" y="180.0" class="t2" text-anchor="end">0.2</text>
+<line x1="62" x2="730" y1="92.0" y2="92.0" class="grid"/>
+<text x="52.0" y="96.0" class="t2" text-anchor="end">0.3</text>
+<text x="62.0" y="364.0" class="t2" text-anchor="middle">32</text>
+<text x="180.4" y="364.0" class="t2" text-anchor="middle">64</text>
+<text x="298.7" y="364.0" class="t2" text-anchor="middle">128</text>
+<text x="374.9" y="364.0" class="t2" text-anchor="middle">200</text>
+<text x="493.3" y="364.0" class="t2" text-anchor="middle">400</text>
+<text x="611.6" y="364.0" class="t2" text-anchor="middle">800</text>
+<text x="730.0" y="364.0" class="t2" text-anchor="middle">1600</text>
+<text x="396.0" y="386.0" class="t2" text-anchor="middle">Distance back to the planted string, in bytes (log scale)</text>
+<text transform="translate(16 218) rotate(-90)" class="t2" text-anchor="middle">Byte accuracy</text>
+<line x1="62" x2="730" y1="330.5" y2="330.5" class="ref" stroke-dasharray="4 4"/>
+<text x="738.0" y="334.5" class="t2" text-anchor="start">Guessing, 1/62</text>
+<line x1="417.1" x2="417.1" y1="84" y2="344" class="ref" stroke-dasharray="4 4"/>
+<text x="422.1" y="96.0" class="t2" text-anchor="start">256</text>
+<path d="M62.0,96.1 L180.4,112.3 L298.7,137.1 L374.9,164.2 L493.3,230.2 L611.6,308.7 L730.0,338.9 " class="line alibi"/>
+<circle cx="62.0" cy="96.1" r="4" class="line alibi bg"/>
+<circle cx="180.4" cy="112.3" r="4" class="line alibi bg"/>
+<circle cx="298.7" cy="137.1" r="4" class="line alibi bg"/>
+<circle cx="374.9" cy="164.2" r="4" class="line alibi bg"/>
+<circle cx="493.3" cy="230.2" r="4" class="line alibi bg"/>
+<circle cx="611.6" cy="308.7" r="4" class="line alibi bg"/>
+<circle cx="730.0" cy="338.9" r="4" class="line alibi bg"/>
+<path d="M62.0,160.5 L180.4,175.6 L298.7,207.4 L374.9,265.4 L493.3,331.1 L611.6,330.5 L730.0,335.2 " class="line rope_1e4"/>
+<circle cx="62.0" cy="160.5" r="4" class="line rope_1e4 bg"/>
+<circle cx="180.4" cy="175.6" r="4" class="line rope_1e4 bg"/>
+<circle cx="298.7" cy="207.4" r="4" class="line rope_1e4 bg"/>
+<circle cx="374.9" cy="265.4" r="4" class="line rope_1e4 bg"/>
+<circle cx="493.3" cy="331.1" r="4" class="line rope_1e4 bg"/>
+<circle cx="611.6" cy="330.5" r="4" class="line rope_1e4 bg"/>
+<circle cx="730.0" cy="335.2" r="4" class="line rope_1e4 bg"/>
+<path d="M62.0,210.5 L180.4,217.3 L298.7,246.0 L374.9,272.4 L493.3,321.1 L611.6,332.1 L730.0,334.0 " class="line rope_5e5"/>
+<circle cx="62.0" cy="210.5" r="4" class="line rope_5e5 bg"/>
+<circle cx="180.4" cy="217.3" r="4" class="line rope_5e5 bg"/>
+<circle cx="298.7" cy="246.0" r="4" class="line rope_5e5 bg"/>
+<circle cx="374.9" cy="272.4" r="4" class="line rope_5e5 bg"/>
+<circle cx="493.3" cy="321.1" r="4" class="line rope_5e5 bg"/>
+<circle cx="611.6" cy="332.1" r="4" class="line rope_5e5 bg"/>
+<circle cx="730.0" cy="334.0" r="4" class="line rope_5e5 bg"/>
+<path d="M62.0,153.9 L180.4,185.3 L298.7,189.4 L374.9,215.2 L493.3,262.0 L611.6,336.6 L730.0,335.8 " class="line control_ctx4x"/>
+<circle cx="62.0" cy="153.9" r="4" class="line control_ctx4x bg"/>
+<circle cx="180.4" cy="185.3" r="4" class="line control_ctx4x bg"/>
+<circle cx="298.7" cy="189.4" r="4" class="line control_ctx4x bg"/>
+<circle cx="374.9" cy="215.2" r="4" class="line control_ctx4x bg"/>
+<circle cx="493.3" cy="262.0" r="4" class="line control_ctx4x bg"/>
+<circle cx="611.6" cy="336.6" r="4" class="line control_ctx4x bg"/>
+<circle cx="730.0" cy="335.8" r="4" class="line control_ctx4x bg"/>
+</svg>

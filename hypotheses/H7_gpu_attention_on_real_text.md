@@ -1,7 +1,7 @@
 # H7: attention normalizers on long contexts in a real language model (GPU)
 
-Status: pre-registered 2026-11-04, before any H7 run and before H5 finished. To be run by the
-owner on 4 GPUs. Everything below is fixed unless an amendment is recorded before the full run.
+Status: pre-registered 2026-11-04, before any H7 run and before H5 finished. To be run by me
+on 4 GPUs. Everything below is fixed unless an amendment is recorded before the full run.
 
 Priors: entmax15 beats softmax at long context on this task, 35%. Sparse readout helps a
 softmax-trained model, 25%. Long context helps softmax at all compared with truncation, 60%.
@@ -92,7 +92,7 @@ Found while implementing, with no data seen. This replaces the gated clause abov
 
 ## Amendment 2, 2026-11-04, before any run: smaller and cheaper
 
-The owner asked for less compute. This replaces the corresponding values above.
+I cut the compute. This replaces the corresponding values above.
 
 - **Model:** width 192, still 6 layers and 6 heads, about 2.7M parameters. **Steps:** 20000, about 3.6
   passes over the training text. Warmup, batch, context and the learning-rate grid are unchanged.

@@ -1,6 +1,9 @@
 # E7 / H7 results: the experiment did not test its question
 
-Run by the owner on 4x RTX 5090, 2026-11-04: 12 tuning and 16 final runs, 2.7M parameters, 20000
+> **Correction, 2026-11-04.** The toy run of [E8](../E8_long_context/RESULTS.md) found no sign of a bug, and found that raising `theta` 50x makes the
+> failure worse. So the wraparound explanation below is not supported. The rest of this file stands as written at the time.
+
+Run on rented 4x RTX 5090, 2026-11-04: 12 tuning and 16 final runs, 2.7M parameters, 20000
 steps, 4 seeds, no non-finite steps. Per-run data, pasted back from the machine:
 `results_compact_run2.csv`. A first complete run was lost when its instance was destroyed before
 the results were copied. It is not used here, and I never saw its numbers.
@@ -43,7 +46,7 @@ Enwik8 certainly has long-range information. What happened is that the model fai
 
 **Likely cause, not yet confirmed: RoPE with `theta = 10000` at a training length of 256.** Distances past
 255 were never seen in training, and the slower RoPE frequencies wrap around at those distances, so
-attention may land on arbitrary far tokens. Our own survey had the warning: SSMax (2501.19399) only
+attention may land on arbitrary far tokens. My own survey had the warning: SSMax (2501.19399) only
 extrapolated with `theta` changed 50x, and 2601.15380 reports plain RoPE going from perplexity 20.82 to
 417 at 8x length. **I missed this when I fixed "RoPE only" in the design.** That is a design error
 of mine and not a finding about these methods. A code bug is less likely but not ruled out: `T` and

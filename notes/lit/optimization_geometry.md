@@ -8,7 +8,7 @@ Coverage caveat: about 10 discovery queries and about 20 papers opened. This is 
 
 1. Five independent groups converge on one object: the **effective learning rate (ELR)** = LR / parameter norm (or angular step). Hyperball (2606.16899), HyperTransfer (2609.07017), ELR-collapse (2608.24814), AIR (2610.40362) and the exact schedule law (2609.09116) all say that a large part of what weight decay / weight-norm / hyperball "does" is shape the ELR trajectory. This is the most replicated finding in the thread and the cheapest to test.
 2. The **geometry story for Muon is shaky**. Random or inverted singular spectra match Muon (2605.11181), spectral flattening alone does not drive the loss (2610.10965), and what remains is step-size stability. Do not pick a method because its "norm" is elegant.
-3. **Tuned-baseline discipline kills most speedups**: <=1.4x at 100M, ~1.1x at 1.2B (2509.02046); the winner flips with batch size (2610.08975) and with horizon (2609.04577); wall-clock at small scale can reverse (2610.21555). Any test we run must tune AdamW properly and report at several batch sizes.
+3. **Tuned-baseline discipline kills most speedups**: <=1.4x at 100M, ~1.1x at 1.2B (2509.02046); the winner flips with batch size (2610.08975) and with horizon (2609.04577); wall-clock at small scale can reverse (2610.21555). Any test I run must tune AdamW properly and report at several batch sizes.
 
 ## 1. Papers (20)
 
@@ -148,7 +148,7 @@ G7. **Link between target propagation and Muon/K-FAC-style trust regions at tran
 
 G8. **Free probability / random-matrix results turned into init or LR rules.** I found analyses of trained weights (Marchenko-Pastur outliers in attention, 2608.07921; spectral phase transitions, 2606.28486; Muon spectral dynamics, 2606.08388 - the last two snippets only) and attention Gaussian equivalence (2610.10033), but no retrieved paper that derives a concrete init or per-layer LR rule for transformers from free-probability calculus, except the stable-rank propagation "calculus" of 2512.04299 (which is a layerwise predictor, not an init rule). One focused query only; low confidence that this is a real gap vs a search miss.
 
-## 4. Suggested small-scale tests (for the coordinator, not run)
+## 4. Suggested small-scale tests (not run)
 
 1. ELR-first schedule: AdamW (and Muon) on a ~10-30M GPT, fixed seed set (>=3), tuned WD+cosine and WSD baselines vs eta_t = ELR(t)*||W_t|| with the AIR 1/sqrt(t)+affine shape; report equal-data and equal-time; also log B_t. Cost: a few lines of code, no new kernels. (G1)
 2. Freon c-sweep and nr(G)/st(A) logging on the same model, at 2 batch sizes. (G3, G2)

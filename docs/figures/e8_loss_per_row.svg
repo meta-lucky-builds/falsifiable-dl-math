@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 430" role="img" aria-label="Loss per row. RoPE models jump from about 1.5 to about 5 bits per byte just past their training length. ALiBi stays flat near 1.44.">
+<style>
+.bg{fill:#fcfcfb}.t1{fill:#0b0b0b}.t2{fill:#52514e}.grid{stroke:#e4e3df}.ref{stroke:#8a8984}
+.alibi{stroke:#2a78d6}.rope_1e4{stroke:#eb6834}.rope_5e5{stroke:#1baf7a}.control_ctx4x{stroke:#eda100}
+@media (prefers-color-scheme: dark){.bg{fill:#1a1a19}.t1{fill:#f4f3ef}.t2{fill:#b5b4ae}.grid{stroke:#383835}.ref{stroke:#7c7b76}
+.alibi{stroke:#3987e5}.rope_1e4{stroke:#d95926}.rope_5e5{stroke:#199e70}.control_ctx4x{stroke:#c98500}}
+text{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:13px}
+.title{font-size:16px;font-weight:600}.line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+</style>
+<rect width="880" height="430" rx="8" class="bg"/>
+<text x="58.0" y="28.0" class="title t1" text-anchor="start">Loss stays flat with ALiBi, and RoPE breaks just past whatever length it trained on</text>
+<line x1="58.0" y1="53.0" x2="76.0" y2="53.0" class="line alibi"/>
+<text x="82.0" y="57.0" class="t2" text-anchor="start">ALiBi, trained on 256</text>
+<line x1="242.7" y1="53.0" x2="260.7" y2="53.0" class="line rope_1e4"/>
+<text x="266.7" y="57.0" class="t2" text-anchor="start">RoPE, trained on 256</text>
+<line x1="420.7" y1="53.0" x2="438.7" y2="53.0" class="line rope_5e5"/>
+<text x="444.7" y="57.0" class="t2" text-anchor="start">RoPE, 50x theta, trained on 256</text>
+<line x1="672.4" y1="53.0" x2="690.4" y2="53.0" class="line control_ctx4x"/>
+<text x="696.4" y="57.0" class="t2" text-anchor="start">RoPE, trained on 1024</text>
+<line x1="58" x2="730" y1="374.0" y2="374.0" class="grid"/>
+<text x="48.0" y="378.0" class="t2" text-anchor="end">0</text>
+<line x1="58" x2="730" y1="327.0" y2="327.0" class="grid"/>
+<text x="48.0" y="331.0" class="t2" text-anchor="end">1</text>
+<line x1="58" x2="730" y1="280.0" y2="280.0" class="grid"/>
+<text x="48.0" y="284.0" class="t2" text-anchor="end">2</text>
+<line x1="58" x2="730" y1="233.0" y2="233.0" class="grid"/>
+<text x="48.0" y="237.0" class="t2" text-anchor="end">3</text>
+<line x1="58" x2="730" y1="186.0" y2="186.0" class="grid"/>
+<text x="48.0" y="190.0" class="t2" text-anchor="end">4</text>
+<line x1="58" x2="730" y1="139.0" y2="139.0" class="grid"/>
+<text x="48.0" y="143.0" class="t2" text-anchor="end">5</text>
+<line x1="58" x2="730" y1="92.0" y2="92.0" class="grid"/>
+<text x="48.0" y="96.0" class="t2" text-anchor="end">6</text>
+<text x="58.0" y="394.0" class="t2" text-anchor="middle">0</text>
+<text x="226.0" y="394.0" class="t2" text-anchor="middle">512</text>
+<text x="394.0" y="394.0" class="t2" text-anchor="middle">1024</text>
+<text x="562.0" y="394.0" class="t2" text-anchor="middle">1536</text>
+<text x="730.0" y="394.0" class="t2" text-anchor="middle">2048</text>
+<text x="394.0" y="416.0" class="t2" text-anchor="middle">Position in the sequence (bytes of context available)</text>
+<text transform="translate(16 233) rotate(-90)" class="t2" text-anchor="middle">Bits per byte</text>
+<line x1="142.0" x2="142.0" y1="84" y2="374" class="ref" stroke-dasharray="4 4"/>
+<text x="147.0" y="96.0" class="t2" text-anchor="start">256</text>
+<line x1="394.0" x2="394.0" y1="84" y2="374" class="ref" stroke-dasharray="4 4"/>
+<text x="399.0" y="96.0" class="t2" text-anchor="start">1024</text>
+<path d="M68.5,288.5 L89.5,300.2 L110.5,302.5 L131.5,304.7 L152.5,303.4 L173.5,304.8 L194.5,305.5 L215.5,305.2 L236.5,306.1 L257.5,306.2 L278.5,306.6 L299.5,306.3 L320.5,306.7 L341.5,306.0 L362.5,305.3 L383.5,307.2 L404.5,308.2 L425.5,305.6 L446.5,306.4 L467.5,305.3 L488.5,306.2 L509.5,306.8 L530.5,306.8 L551.5,306.4 L572.5,307.8 L593.5,305.7 L614.5,307.0 L635.5,305.8 L656.5,305.8 L677.5,305.3 L698.5,305.8 L719.5,306.1 " class="line alibi"/>
+<path d="M68.5,288.9 L89.5,300.2 L110.5,302.5 L131.5,304.4 L152.5,298.5 L173.5,242.9 L194.5,206.7 L215.5,189.9 L236.5,179.5 L257.5,158.2 L278.5,150.4 L299.5,147.9 L320.5,150.7 L341.5,154.5 L362.5,157.6 L383.5,156.1 L404.5,148.6 L425.5,145.7 L446.5,143.4 L467.5,142.8 L488.5,143.1 L509.5,144.7 L530.5,146.0 L551.5,148.7 L572.5,150.2 L593.5,151.5 L614.5,150.8 L635.5,141.1 L656.5,132.9 L677.5,131.1 L698.5,131.7 L719.5,133.0 " class="line rope_1e4"/>
+<path d="M68.5,288.9 L89.5,300.1 L110.5,302.0 L131.5,304.2 L152.5,243.7 L173.5,169.3 L194.5,157.0 L215.5,150.1 L236.5,145.6 L257.5,141.2 L278.5,119.2 L299.5,112.2 L320.5,111.7 L341.5,109.0 L362.5,118.4 L383.5,129.6 L404.5,131.1 L425.5,131.6 L446.5,130.1 L467.5,131.1 L488.5,131.6 L509.5,133.7 L530.5,130.8 L551.5,112.8 L572.5,110.9 L593.5,110.8 L614.5,113.9 L635.5,122.8 L656.5,127.2 L677.5,124.8 L698.5,124.5 L719.5,126.0 " class="line rope_5e5"/>
+<path d="M68.5,285.4 L89.5,298.8 L110.5,301.9 L131.5,304.2 L152.5,303.3 L173.5,304.7 L194.5,305.7 L215.5,305.1 L236.5,306.5 L257.5,306.7 L278.5,306.7 L299.5,306.6 L320.5,307.0 L341.5,306.4 L362.5,305.4 L383.5,307.3 L404.5,308.1 L425.5,302.8 L446.5,293.5 L467.5,283.6 L488.5,275.8 L509.5,253.4 L530.5,237.2 L551.5,229.2 L572.5,223.5 L593.5,214.5 L614.5,210.7 L635.5,190.7 L656.5,166.7 L677.5,163.8 L698.5,164.5 L719.5,161.9 " class="line control_ctx4x"/>
+<text x="738.0" y="123.0" class="t1" text-anchor="start">RoPE 50x 5.28</text>
+<text x="738.0" y="146.0" class="t1" text-anchor="start">RoPE 5.13</text>
+<text x="738.0" y="165.9" class="t1" text-anchor="start">RoPE 1024 4.51</text>
+<text x="738.0" y="310.1" class="t1" text-anchor="start">ALiBi 1.44</text>
+</svg>

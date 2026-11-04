@@ -5,7 +5,7 @@ Scout date: 2026-11-04. Source: alphaXiv only (8 discovery queries, ~19 papers o
 ## Read this first: how strong is the evidence behind this file
 
 - Most "read" papers were opened through alphaXiv's get_paper_content, which returns an AI-generated report, not the PDF. Numbers below come from those reports. Exceptions where I saw raw paper text: 2604.01563 (full text), 2610.05488, 2607.19514, 2607.15525, 2609.32814 (abstract + start only).
-- Treat every number as "reported by the report of the paper", and re-check against the PDF before the coordinator relies on it.
+- Treat every number as "reported by the report of the paper", and re-check against the PDF before relying on it.
 - Retrieval anomaly: fetching 2602.08216 (listed as "Kaniadakis and Reciprocal-Symmetric Abe Operators", Sejong Univ.) returned a different paper (a "Thermodynamic Isomorphism of Transformers" free-energy derivation of softmax). I did NOT verify any claim about Kaniadakis/Abe attention. It appears below only as a listing.
 - Seeds, tuning and replication are marked per paper. "Not stated" means the report did not say, not that the paper did not do it.
 
@@ -83,11 +83,11 @@ Format: ID | core formula | claimed gain | evidence strength.
 
 **13. 2607.15525, KANs for Small Language Models, Alves and Vicente (USP)**
 - Result: FFN replaced by B-spline KAN, grouped Chebyshev, or rational GR-KAN. BabyLM validation loss: gated and KAN-family FFNs all beat vanilla GELU MLP slightly, but on BLiMP (10 seeds, 59,875 pairs) accuracies span 62.4-63.1% with overlapping CIs, EWoK at chance, the single +0.7 GR-KAN edge reverses on the BLiMP supplement. Param-matched MLPEdge transformer is below an MLP on Wikitext-103; corrected 286M GR-KAN stays below SwiGLU on ClimbMix. Pruning 20-25% of edges is nearly free, but structured MLP-neuron pruning does as well.
-- Evidence: best KAN-for-LM audit I found (10 seeds, multiple corpora); validation loss does not predict benchmark ranking, a useful warning for our own protocol.
+- Evidence: best KAN-for-LM audit I found (10 seeds, multiple corpora); validation loss does not predict benchmark ranking, a useful warning for my own protocol.
 
 **14. 2602.12390, Rational Neural Networks have Expressivity Advantages, Tang and Townsend (Cornell)**
 - Formula: trainable low-degree rational (Pade) activation with strictly positive denominator `P(x)/Q(x)`. Theory: any smooth-activation network is matched by a rational one with O(log^3 log(1/eps)) overhead; some rational functions need Omega(log(1/eps)) parameters for bounded smooth-activation nets.
-- Claim: matches or beats GELU/ReLU/SiLU on CIFAR-10 (VGG), Tiny-ImageNet (ViT-S, CaiT-S24, Swin-T), offline RL (IQL, TD3+BC; wins 5 of 6). Key finding for us: normalization layers hurt adaptive rationals (affine absorption into coefficients, non-identifiability); in a no-LayerNorm ViT the rationals win by a large margin and fixed activations often fail to train.
+- Claim: matches or beats GELU/ReLU/SiLU on CIFAR-10 (VGG), Tiny-ImageNet (ViT-S, CaiT-S24, Swin-T), offline RL (IQL, TD3+BC; wins 5 of 6). Key finding for me: normalization layers hurt adaptive rationals (affine absorption into coefficients, non-identifiability); in a no-LayerNorm ViT the rationals win by a large margin and fixed activations often fail to train.
 - Evidence: theory solid, experiments small-scale, seeds not stated, only the MLP activation swapped. Not tested in language models; 13 suggests rational (GR-KAN) at LM scale does not beat SwiGLU.
 
 **15. 2609.32814, Associative-algebra layers for Transformers, Koziev and Oseledets**
@@ -196,4 +196,4 @@ Not covered in depth: stick-breaking attention, sigmoid attention, Differential 
 
 ## 4. Most promising lead
 
-A matched-compute shootout of length-aware attention normalizers in a small nanoGPT (10-60M params, Colab-feasible): softmax vs SSMax vs alpha-entmax vs ASEntmax-style `(s log n)` scaling vs GOAT-style explicit log-prior, with a single positional scheme and tuned learning rate per method, 3+ seeds, evaluated at 1x/2x/4x/8x training length. Why: one-line implementations, three independent theoretical motivations that predict the same symptom, claims from three groups never in one table (Gap A), and the failure modes (softpick init, 2610.05488; DyT/SwiGLU, 2604.23434) tell us what controls to include. Runner-up: Derf/DyT with Muon plus a spectral cap (Gap D), a cheap and clean interaction test.
+A matched-compute shootout of length-aware attention normalizers in a small nanoGPT (10-60M params, Colab-feasible): softmax vs SSMax vs alpha-entmax vs ASEntmax-style `(s log n)` scaling vs GOAT-style explicit log-prior, with a single positional scheme and tuned learning rate per method, 3+ seeds, evaluated at 1x/2x/4x/8x training length. Why: one-line implementations, three independent theoretical motivations that predict the same symptom, claims from three groups never in one table (Gap A), and the failure modes (softpick init, 2610.05488; DyT/SwiGLU, 2604.23434) tell me what controls to include. Runner-up: Derf/DyT with Muon plus a spectral cap (Gap D), a cheap and clean interaction test.

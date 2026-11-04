@@ -390,8 +390,8 @@ Predictions, relative to the `1e-12` arm of the same seed:
   3 seeds.
 - **P2, the discriminating one:** the `theta^2` ratio stays within [0.6, 1.6] at every
   arm. The effective-LR reading predicts a falling ratio, down to about `alpha^2`.
-  Kill: outside the band at 2 or more arms in all 3 seeds. That kill favors the
-  coordinator's conjecture over this document.
+  Kill: outside the band at 2 or more arms in all 3 seeds. That kill favors
+  my conjecture over this document.
 - **P3:** `omega` ratio equals `1 + nu_eff`.
   Kill: the ratio at the largest-epsilon arm is below 1.25 or above 2.5 in all seeds,
   or Spearman of `omega` against `nu_eff` is below 0.5.

@@ -76,7 +76,7 @@ Searched: "conformal prediction sparsemax entmax prediction set Fenchel-Young". 
 **G8. Proper-score family (Brier, spherical, Beta) as plain supervised next-token or classification losses at several seeds.**
 Searched: "Brier loss spherical score training deep classifiers language models at scale". Found only the RL-reward study (2608.28482, one seed) and 2606.29471 (small data). I found no multi-seed pretraining-style comparison of spherical or Beta-family scores. 2501.18537 covers f-divergences, which is a different family. Test: small LM or CIFAR-100 at 5 seeds with log, Brier, spherical, Beta(2,8), alpha=1.5 FY.
 
-## 4. Notes for the coordinator
+## 4. Notes for follow-up
 
 - **Highest value per Colab-hour:** G1 + G3 combined (entmax-1.5 / alpha-divergence FY loss vs CE in bf16 under label noise). Closed-form, one extra bisection kernel, baselines available (GCE, eps-softmax, fixed CE).
 - Unreplicated or single-run headline numbers: #1 (seeds unconfirmed), #6, #11, #12 (GPT), #14, #17. Treat their gains as hypotheses.
