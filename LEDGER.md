@@ -9,6 +9,7 @@ Every hypothesis stays here, including dead ones.
 | H3 | Sign updates improve forward-gradient estimates, as heavy-tail theory might suggest | **No estimator advantage for fixed `g`**; training not tested, thread deprioritized | E3.0: closed form and Monte Carlo agree. SNR is 1.00 raw, 0.80 tangent-normalized, 0.64 sign |
 | H4 | Finite Adam epsilon gives a closed recursion and a crossover scale `r* = G/(eps sqrt d)`. My stronger conjecture, that epsilon acts as an effective-LR schedule, is expected to fail: equilibrium rotation should not depend on epsilon | **Stopped: pre-registered kill fired on `omega(x)`, E4.1 not run** | E4.0: exact recursion confirmed to about 1e-14, including against real AdamW. On a noise walk, equilibrium rotation does not depend on epsilon (within 0.13%) and `r_eq` and the transit law hold, but `omega` missed by 18.8% against a 15% limit. Toy model only; no route to a speedup |
 | H5 | Entmax15's gain on recall comes mainly from training or mainly from the sparse readout | Pre-registered, not yet run | Suggested by E1.1, so it uses fresh seeds |
+| H6 | In diagonal nets, decay-then-off reaches the same limit as a small init, and small init gets there in no more steps | Pre-registered, derivation by hand, not yet run | Different area: implicit bias. Diagonal linear models only |
 
 ## Queue, not yet pre-registered
 
