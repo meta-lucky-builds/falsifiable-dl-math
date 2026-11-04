@@ -17,7 +17,8 @@ does not want to be asked about small decisions.
   retrieval.
 - Never run tests or experiments locally, even CPU ones. Use the Colab MCP.
 - Never put a GitHub token in Colab. Send code by writing cells.
-- Work on branch `research/math-foundations`.
+- Work on branch `research/math-foundations`. `main` holds the same history and is only ever
+  fast-forwarded from it.
 - Spend usage carefully: narrow agent briefs, cheapest suitable model, no
   repeated searches. Do not lower the rigor rules in `README.md` to save usage.
 - Protect context: keep long outputs in files, and have agents return short
@@ -32,14 +33,12 @@ does not want to be asked about small decisions.
 ## Open question for the owner
 
 The brief named "meta-lucky-builds/ami" and also "the intr repo". `ami` does not
-exist, so this work is in `mai`. A `/content/intr` folder from other work on the shared
-Colab runtime suggests `intr` belongs to a sibling mission. Move this if that was wrong.
+exist, so this work is in `mai`. Move this if that was wrong.
 
 ## Compute
 
-Colab: CPU only, 2 cores, 12 GB RAM. **The runtime is shared with other sessions of the
-owner** (`/content/intr`, `mechinterp`, `next` and more). Do not touch their files or
-processes. The notebook can be reset or its kernel restarted by them, so background
+Colab: CPU only, 2 cores, 12 GB RAM. **The runtime is shared with the owner's other work
+under `/content`.** Do not touch those files or processes. The notebook can be reset or its kernel restarted by them, so background
 processes and files in `/content/mai` are what survive: find state with `ps` and `ls`,
 never kernel variables. Wall-clock timings are not clean. If the Colab tools disappear,
 reload them with ToolSearch and call `open_colab_browser_connection`.

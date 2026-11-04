@@ -29,10 +29,10 @@ broke as soon as context passed the training length, so the arms were compared i
 
 | Arm | L(256) | L(512) | L(1024) | L(2048) |
 |---|---|---|---|---|
-| softmax | 1.394 | 5.230 | 5.180 | 5.366 |
+| softmax | 1.394 | 5.230 | 5.179 | 5.366 |
 | ssmax | 1.397 | 5.545 | 6.075 | 6.469 |
 | entmax15 | 1.389 | 5.244 | 5.412 | 5.875 |
-| entmax15_scaled | 1.391 | 5.261 | 5.425 | 5.949 |
+| entmax15_scaled | 1.390 | 5.261 | 5.425 | 5.949 |
 
 Loss rises by about 3.8 bits per byte at just 2x length, for every arm. These bytes are near the training
 context, and the same model predicts them at 1.39 bits per byte given only 256 bytes of context
@@ -65,7 +65,7 @@ primary test:
 - **Naive sparse readout hurts.** Reading a softmax-trained model with entmax15 raises `L(256)` from 1.394 to
   1.653 bits per byte, at a length where the model works. This is the most solid result here: consistent
   in all 4 seeds, and independent of the RoPE problem. Any sparse readout would need recalibrating.
-- **Cost.** entmax15 runs about 29% slower per step than softmax here (21.7 ms against 16.8 ms).
+- **Cost.** entmax15 runs about 29% slower per step than softmax here (21.7 ms against 16.9 ms).
 - **Learning rate.** All arms selected 0.0012, the top of the grid, as in E1.1, so all may be under-tuned.
 
 ## What would actually test the question

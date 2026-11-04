@@ -156,5 +156,5 @@ G8. **Free probability / random-matrix results turned into init or LR rules.** I
 
 ## 5. Files and retrieval notes
 
-- Long papers were saved by the tool to `C:\Users\mykids\.claude\projects\...\tool-results\` (2610.36778, 2609.34915, 2610.08975, 2610.40362, 2609.33240, 2611.03633, 2605.07815, 2610.26283). Only their abstracts/intros were read.
+- Long papers came back as large tool results (2610.36778, 2609.34915, 2610.08975, 2610.40362, 2609.33240, 2611.03633, 2605.07815, 2610.26283). Only their abstracts/intros were read.
 - Results are returned by alphaXiv with publication dates up to 2026-11-02. I verified IDs only through tool output.
