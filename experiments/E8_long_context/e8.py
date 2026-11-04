@@ -108,9 +108,10 @@ class Recorder:
     def result(self, bin_width):
         far = self.far / self.row_count
         mass = self.mass / self.mass.sum()
-        logit = self.logit / self.count  # 0/0 gives NaN: a bucket with no column in it
-        return dict(far=bin_rows(far, bin_width), mass=mass.tolist(),
-                    logit=[None if math.isnan(x) else x for x in logit.tolist()])
+        clean = lambda t: [None if math.isnan(x) else x for x in t.tolist()]
+        # 0/0 gives NaN below: a bucket with no column in it
+        return dict(far=bin_rows(far, bin_width), mass=mass.tolist(), logit=clean(self.logit / self.count),
+                    density=clean(self.mass / self.count))
 
 
 class E8Attention(e7.Attention):
@@ -270,16 +271,18 @@ def evaluate(model, arm, cfg, job_cfg, rt, partial, beat=lambda: None):
 
     metric("T", lambda: e7.eval_truncated(model, test, ends, keep, W, max(1, tokens // W), bs_state, beat))
 
-    def recorded():
+    def recorded(length):
         step = max(1, len(ends) // cfg["record_windows"])
         edges = distance_edges(cfg)
-        recorders = model.set_recorders(lambda: Recorder(T, keep, W, edges, device))
+        recorders = model.set_recorders(lambda: Recorder(length, keep, W, edges, device))
         try:
-            per_row_bits(model, test, ends[::step], T, bs0, bs_state, "rows", beat)
+            per_row_bits(model, test, ends[::step], length, max(1, tokens // length), bs_state,
+                         f"rec{length}", beat)
             return dict(edges=edges, layers=[r.result(keep) for r in recorders])
         finally:
             model.set_recorders()
-    metric("attention", recorded)
+    metric("attention", lambda: recorded(T))
+    metric("attention_short", lambda: recorded(cfg["Ns"][1]))  # its last bin is the rows C3 reads
 
     for D in cfg["Ds"]:
         def copy(D=D):

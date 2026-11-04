@@ -15,8 +15,10 @@ from pathlib import Path
 from scipy import stats
 
 BASE, CONTROL = "rope_1e4", "control_ctx4x"
-SURVIVE_MEAN, SURVIVE_MAX = 0.02, 0.05
-SHORT_COST, CONTROL_MARGIN, REPRO_MIN, FAR_MIN, USEFUL_MIN = 0.03, 0.03, 1.0, 0.5, 0.005
+SURVIVE_MEAN, SURVIVE_MAX, SURVIVE_ANY_BIN = 0.02, 0.05, 0.05
+SHORT_COST, CONTROL_MARGIN, REPRO_MIN, USEFUL_MIN = 0.03, 0.10, 1.0, 0.005
+T_MARGIN, DENSITY_MIN = 0.03, 2.0
+NEAR_BUCKET, FAR_BUCKET = 2, 3  # distances [W/4, W) and [W, 2W) of the base context
 
 
 def load(out):
@@ -49,8 +51,20 @@ def far_mass(r, N, keep):
     return statistics.mean(x["far"][bin_index(N, keep)] for x in r["eval"]["attention"]["layers"])
 
 
+def density_ratio(r):
+    """Per-token weight, far over near, on the last bin of the short recorded pass, mean over layers."""
+    layers = r["eval"]["attention_short"]["layers"]
+    return statistics.mean(x["density"][FAR_BUCKET] / x["density"][NEAR_BUCKET] for x in layers)
+
+
 def mean(xs):
     return statistics.mean(xs) if xs else float("nan")
+
+
+def measurement_ok(cfg, rows):
+    """C0: Lw at the longest length against T, which has the same targets and no long row."""
+    last = max(cfg["Ns"])
+    return mean([Lw(r, last, cfg["keep"]) for r in rows]) <= mean([r["eval"]["T"] for r in rows]) + T_MARGIN
 
 
 def interval(xs):
@@ -72,22 +86,32 @@ def survives(cfg, rows):
     Ns = far_Ns(cfg, rows[0])
     if not Ns:
         return None
-    return all(mean([excess(r, N, keep) for r in rows]) <= SURVIVE_MEAN
-               and max(excess(r, N, keep) for r in rows) <= SURVIVE_MAX for N in Ns)
+    at_lengths = all(mean([excess(r, N, keep) for r in rows]) <= SURVIVE_MEAN
+                     and max(excess(r, N, keep) for r in rows) <= SURVIVE_MAX for N in Ns)
+    return at_lengths and worst_bin(cfg, rows) <= SURVIVE_ANY_BIN
+
+
+def worst_bin(cfg, rows):
+    """Largest mean excess over all bins past the training context."""
+    first = rows[0]["ctx"] // cfg["keep"]
+    n_bins = len(rows[0]["eval"]["L_bins"])
+    return max(mean([r["eval"]["L_bins"][i] - r["eval"]["Lw_bins"][i] for r in rows])
+               for i in range(first, n_bins))
 
 
 def useful(cfg, rows):
-    """Returns (is it useful, the N, mean, low, high) for the N with the lowest excess."""
+    """Returns (is it useful, N, mean, low, high). Every N past W is read; a qualifying N is preferred,
+    then the lowest mean excess."""
     keep = cfg["keep"]
     best = None
     for N in far_Ns(cfg, rows[0]):
         m, lo, hi = interval([excess(r, N, keep) for r in rows])
-        if best is None or m < best[1]:
-            best = (N, m, lo, hi)
+        ok = m < -USEFUL_MIN and hi < 0
+        if best is None or (ok, -m) > (best[0], -best[2]):
+            best = (ok, N, m, lo, hi)
     if best is None:
         return False, None, float("nan"), float("nan"), float("nan")
-    N, m, lo, hi = best
-    return m < -USEFUL_MIN and hi < 0, N, m, lo, hi
+    return best
 
 
 def rules(cfg, runs):
@@ -99,21 +123,33 @@ def rules(cfg, runs):
     if not base or not control:
         return ["Rules not read: the base or control arm has no finished runs."], dict(complete=False)
     base_short = mean([L(r, short, keep) for r in base])
+    last = max(Ns)
+    v["C0"] = {arm: measurement_ok(cfg, rows) for arm, rows in runs.items()}
+    for arm, rows in runs.items():
+        out.append(f"C0 measurement, {arm}: Lw({last}) {mean([Lw(r, last, keep) for r in rows]):.3f}, T "
+                   f"{mean([r['eval']['T'] for r in rows]):.3f}, limit T + {T_MARGIN}: "
+                   f"{'PASS' if v['C0'][arm] else 'FAIL, this arm is not read'}")
+    if not v["C0"][BASE]:
+        out.append("C0 FAILED on the base arm, so a bug is the leading explanation. Stop here: the rest is not read.")
+        v["complete"] = True
+        return out, v
     ctl_N = control[0]["ctx"]
     ctl = mean([L(r, ctl_N, keep) for r in control])
-    v["C1"] = ctl <= base_short + CONTROL_MARGIN
-    out.append(f"C1 positive control: control L({ctl_N}) {ctl:.3f}, limit {base_short + CONTROL_MARGIN:.3f} "
-               f"(base L({short}) {base_short:.3f} + {CONTROL_MARGIN}): {'PASS' if v['C1'] else 'FAIL'}")
+    base_w = mean([Lw(r, ctl_N, keep) for r in base])
+    v["C1"] = ctl <= base_w + CONTROL_MARGIN
+    out.append(f"C1 positive control: control L({ctl_N}) {ctl:.3f}, limit {base_w + CONTROL_MARGIN:.3f} "
+               f"(base Lw({ctl_N}) {base_w:.3f} + {CONTROL_MARGIN}): {'PASS' if v['C1'] else 'FAIL'}")
     e2 = mean([excess(r, n2, keep) for r in base])
     v["C2"] = e2 >= REPRO_MIN
-    out.append(f"C2 reproduction: base E({n2}) {e2:+.3f}, needs at least {REPRO_MIN}: "
-               f"{'PASS' if v['C2'] else 'FAIL'}")
-    f2 = mean([far_mass(r, n2, keep) for r in base])
-    v["C3"] = f2 >= FAR_MIN
-    out.append(f"C3 mechanism: base far mass at N = {n2}, mean over layers, {f2:.3f}, needs at least "
-               f"{FAR_MIN}: {'SUPPORTED' if v['C3'] else 'NOT SUPPORTED'}")
+    out.append(f"C2 reproduction: base L({n2}) {mean([L(r, n2, keep) for r in base]):.3f}, E({n2}) {e2:+.3f}, "
+               f"needs at least {REPRO_MIN}: {'PASS' if v['C2'] else 'FAIL'}")
+    d2 = mean([density_ratio(r) for r in base])
+    v["C3"] = d2 >= DENSITY_MIN
+    out.append(f"C3 mechanism: base per-token weight, far over near, at N = {n2}: {d2:.2f}, needs at least "
+               f"{DENSITY_MIN}: {'SUPPORTED' if v['C3'] else 'NOT SUPPORTED'}")
     if not v["C1"]:
-        out.append("C1 FAILED, so a bug is the leading explanation. Stop here: the rest is not read.")
+        out.append("C1 FAILED: long rows do not work even when trained, so a bug is the leading explanation. "
+                   "Stop here: the rest is not read.")
         v["complete"] = True
         return out, v
     if not v["C2"]:
@@ -121,13 +157,14 @@ def rules(cfg, runs):
     out.append("")
     v["survive"], v["cost"], v["useful"] = {}, {}, {}
     for arm, rows in runs.items():
-        s = survives(cfg, rows)
+        s = survives(cfg, rows) if v["C0"][arm] else False
         v["survive"][arm] = s
         ms = mean([L(r, short, keep) for r in rows])
         v["cost"][arm] = ms > base_short + SHORT_COST
         u, uN, um, ulo, uhi = useful(cfg, rows)
         v["useful"][arm] = bool(s) and u
-        note = "survives" if s else "fails"
+        note = "not read (C0)" if not v["C0"][arm] else "survives" if s else "fails"
+        note += f", worst bin E {worst_bin(cfg, rows):+.3f}"
         cost = f", short-context cost ({ms:.3f})" if v["cost"][arm] else ""
         use = ""
         if s:
@@ -145,14 +182,17 @@ def rules(cfg, runs):
     else:
         out.append("E7's claim about RoPE: NOT SUPPORTED by these rules.")
     candidates = [a for a, s in v["survive"].items() if s and a != CONTROL and not v["cost"][a]]
+    costly = [a for a, s in v["survive"].items() if s and a != CONTROL and v["cost"][a]]
     any_use = any(v["useful"].values())
     if candidates:
         out.append(f"Next, per H8: pre-register a normalizer comparison on one of {candidates}, with fresh seeds.")
+    elif costly:
+        out.append(f"Next: {costly} survive only with a short-context cost. H8 sets no automatic step; the owner decides.")
     else:
-        out.append("Next, per H8: no arm survives without cost. Do not compare normalizers; train at length.")
+        out.append("Next, per H8: no arm survives. Do not compare normalizers; train at length.")
     if not any_use:
-        out.append("No arm shows useful long context. If the copy probe is near chance past W, this model size "
-                   "gains nothing from long context here, so a comparison needs a retrieval task or a larger model.")
+        out.append("No arm shows a gain over windowed attention, whose stacked layers already reach several W. "
+                   "If the copy probe is near chance past W, a comparison needs a retrieval task or a larger model.")
     v["complete"] = True
     return out, v
 
@@ -175,21 +215,27 @@ def report(cfg, runs):
     bad = sum(r["nonfinite"] for rows in runs.values() for r in rows)
     lines.append(f"Non-finite training steps: {bad}. Evaluation windows: "
                  f"{sorted({r['eval_hash'][:8] for rows in runs.values() for r in rows})} (one value means all alike).")
+    shas = {r.get("code_sha") for rows in runs.values() for r in rows}
+    if len(shas) > 1:
+        lines.append(f"WARNING: these runs come from {len(shas)} versions of the code. Do not read them together.")
     # rows inside the training context are unchanged by the limit, so this must be exactly zero
     worst = max((abs(excess(r, Ns[0], keep)) for rows in runs.values() for r in rows), default=0.0)
     lines.append(f"Check, |E({Ns[0]})| must be near zero: largest {worst:.2e}"
                  + ("" if worst < 1e-3 else "  CHECK FAILED"))
     lines.append("")
 
-    head = ["arm"] + [f"L({N})" for N in Ns] + [f"E({N})" for N in Ns[1:]] + ["T", "val"]
+    head = ["arm"] + [f"L({N})" for N in Ns] + [f"E({N})" for N in Ns[1:]] + ["T", f"T-L({Ns[-1]})", "ratio", "val"]
     rows = []
     for a in arms:
         rs = runs[a]
         rows.append([a] + [f"{mean([L(r, N, keep) for r in rs]):.3f}" for N in Ns]
                     + [f"{mean([excess(r, N, keep) for r in rs]):+.3f}" for N in Ns[1:]]
                     + [f"{mean([r['eval']['T'] for r in rs]):.3f}",
+                       f"{mean([r['eval']['T'] - L(r, Ns[-1], keep) for r in rs]):+.3f}",
+                       f"{mean([density_ratio(r) for r in rs]):.2f}",
                        f"{mean([r['val_loss_final'] for r in rs]):.3f}"])
-    lines += table("Bits per byte, mean over seeds. E(N) = L(N) - Lw(N), paired on the same targets.", head, rows)
+    lines += table("Bits per byte, mean over seeds. E(N) = L(N) - Lw(N), paired on the same targets. "
+                   "ratio is C3's per-token weight, far over near.", head, rows)
 
     lines.append("Reading rules, fixed in the pre-registration")
     verdict_lines, _ = rules(cfg, runs)

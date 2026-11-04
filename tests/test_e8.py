@@ -1,7 +1,8 @@
 """Tests for E8. `python tests/test_e8.py`. The __main__ runner needs no pytest. CPU only.
 
-The most important ones check that the long-row path E8 is meant to diagnose behaves as claimed,
-so a failure in the real run cannot come from the measurement."""
+The most important ones check that the long-row path E8 is meant to diagnose behaves as claimed.
+Attention is nearly uniform at init, so tests of positions sharpen it first; test_sharpening_makes_rope_visible
+checks that this makes a position error large enough to catch."""
 import importlib.util
 import json
 import math
@@ -35,6 +36,26 @@ def model(arm="rope_1e4", seed=0, cfg=CFG):
     return e8.E8Model(cfg, arm).eval()
 
 
+def sharp(arm="rope_1e4", seed=0, cfg=CFG, gain=30.0):
+    """A model whose attention is peaked, as a trained one's is, and whose output depends on it."""
+    m = model(arm, seed, cfg)
+    with torch.no_grad():
+        for blk in m.blocks:
+            blk.attn.q.weight *= gain
+            blk.attn.k.weight *= gain
+            blk.attn.v.weight *= gain
+            blk.attn.out.weight *= gain
+    return m
+
+
+def test_sharpening_makes_rope_visible():
+    """A wrong RoPE must move the output by far more than the tolerances below."""
+    x = tokens(100)
+    with torch.no_grad():
+        d = (sharp("rope_1e4")(x)[:, -1] - sharp("rope_5e5")(x)[:, -1]).abs().max().item()
+    assert d > 2e-2, d
+
+
 def tokens(T, B=3, seed=1):
     return torch.randint(0, 256, (B, T), generator=torch.Generator().manual_seed(seed))
 
@@ -58,11 +79,11 @@ def test_rope_arm_equals_e7():
 def test_row_depends_only_on_earlier_columns():
     """Row r of a long window equals the last row of a window of length r + 1. Basis of the per-row pass."""
     for arm in e8.ARM_SPECS:
-        m = model(arm)
-        x = tokens(200)
+        m = sharp(arm)
+        x = tokens(600)  # past 256, so the block size differs between the two passes
         with torch.no_grad():
             full = m(x)
-            for r in (0, 7, 31, 32, 63, 64, 150, 199):
+            for r in (0, 7, 31, 32, 63, 64, 150, 299, 599):
                 assert (m(x[:, :r + 1])[:, -1] - full[:, r]).abs().max() < 2e-3, (arm, r)
 
 
@@ -71,7 +92,7 @@ def test_relative_positions_only():
     depends on distance alone, including at positions past the training length."""
     cfg = dict(CFG, n_layer=1)
     for arm in ("rope_1e4", "rope_5e5", "alibi", "rope_1e4_alibi"):
-        m = model(arm, cfg=cfg)
+        m = sharp(arm, cfg=cfg)
         W = 16
         m.set_window(W)
         tail = tokens(W)
@@ -198,6 +219,20 @@ def test_recorder_against_brute_force():
             tail[bucket[r - c]] += w[:, :, r, c].sum().double()
     assert np.allclose(got["mass"], (tail / tail.sum()).tolist(), atol=1e-5), got["mass"]
     assert abs(sum(got["mass"]) - 1.0) < 1e-9
+    # per-token weight and mean relative logit, per bucket
+    weights, logits = {}, {}
+    rel = z - z.masked_fill(torch.isinf(z), -math.inf).max(-1, keepdim=True).values
+    for r in range(T - keep, T):
+        for c in range(r + 1):
+            b = bucket[r - c].item()
+            weights.setdefault(b, []).append(w[:, :, r, c].mean().item())
+            logits.setdefault(b, []).append(rel[:, :, r, c].mean().item())
+    for b in range(len(edges) - 1):
+        if b in weights:
+            assert abs(got["density"][b] - np.mean(weights[b])) < 1e-5, b
+            assert abs(got["logit"][b] - np.mean(logits[b])) < 1e-4, b
+        else:
+            assert got["density"][b] is None and got["logit"][b] is None, b
 
 
 def test_copy_probe_layout():
@@ -233,9 +268,12 @@ def fake_run(arm, seed, L_far, Lw_far, far=0.9, ctx=32, val=1.0):
     Lw_bins = [2.0] * bins
     for i in range(ctx // 8, bins):
         L_bins[i], Lw_bins[i] = L_far, Lw_far
-    layer = dict(far=[0.0] * (ctx // 8) + [far] * (bins - ctx // 8), mass=[1.0 / 6] * 6, logit=[0.0] * 6)
-    ev = dict(L_bins=L_bins, Lw_bins=Lw_bins, T=2.0, attention=dict(edges=[0, 2, 8, 32, 64, 128, 256],
-                                                                  layers=[layer] * 2))
+    density = [1.0] * 6
+    density[analyze.FAR_BUCKET] = 3.0 if far > 0.5 else 0.5
+    layer = dict(far=[0.0] * (ctx // 8) + [far] * (bins - ctx // 8), mass=[1.0 / 6] * 6, logit=[0.0] * 6,
+                 density=density)
+    recorded = dict(edges=[0, 2, 8, 32, 64, 128, 256], layers=[layer] * 2)
+    ev = dict(L_bins=L_bins, Lw_bins=Lw_bins, T=2.0, attention=recorded, attention_short=recorded)
     for D in (16, 24):
         ev[f"copy_{D}"] = dict(byte=0.1, all4=0.0)
     return dict(arm=arm, seed=seed, ctx=ctx, batch=8, step_ms=1.0, tokens_per_s=1.0, nonfinite=0,
@@ -257,10 +295,77 @@ def fake_runs(base=(5.0, 2.0), control_far=(2.0, 2.0), survive=True):
 
 def test_rules_all_pass():
     lines, v = analyze.rules(FAKE_CFG, fake_runs())
-    assert v["C1"] and v["C2"] and v["C3"]
+    assert v["C0"]["rope_1e4"] and v["C1"] and v["C2"] and v["C3"]
     assert v["survive"]["alibi"] and not v["survive"]["rope_1e4"]
-    assert any("SUPPORTED" in x and "NOT" not in x for x in lines)
+    assert any(x.startswith("E7's claim about RoPE: SUPPORTED") for x in lines)
     assert any("normalizer comparison" in x for x in lines)
+
+
+def test_rules_long_row_bug_is_caught_by_c0():
+    """A bug raising L and Lw together leaves E at zero. Only the comparison with T can see it."""
+    runs = fake_runs(base=(5.0, 5.0), control_far=(5.0, 5.0))
+    lines, v = analyze.rules(FAKE_CFG, runs)
+    assert not v["C0"]["rope_1e4"] and "survive" not in v
+    assert any("bug is the leading" in x for x in lines)
+
+
+def test_rules_arm_failing_c0_cannot_survive():
+    runs = fake_runs()
+    for r in runs["alibi"]:
+        r["eval"]["Lw_bins"] = [4.0] * 32
+        r["eval"]["L_bins"] = [4.0] * 32
+    lines, v = analyze.rules(FAKE_CFG, runs)
+    assert not v["C0"]["alibi"] and v["survive"]["alibi"] is False
+
+
+def test_rules_c3_reads_density_not_mass():
+    runs = fake_runs()
+    for r in runs["rope_1e4"]:
+        layers = r["eval"]["attention_short"]["layers"]
+        r["eval"]["attention_short"] = dict(edges=[0, 2, 8, 32, 64, 128, 256], layers=[
+            dict(x, density=[1.0] * 6) for x in layers])
+    assert not analyze.rules(FAKE_CFG, runs)[1]["C3"]
+
+
+def test_rules_c1_uses_same_targets():
+    runs = fake_runs()
+    i = analyze.bin_index(128, 8)
+    for r in runs["rope_1e4"]:  # base L(32) stays 2.0; only Lw at the control's own length moves
+        r["eval"]["Lw_bins"][i] = 1.0
+    for r in runs["control_ctx4x"]:
+        r["eval"]["L_bins"][i] = 1.5
+    assert not analyze.rules(FAKE_CFG, runs)[1]["C1"]
+
+
+def test_rules_single_bad_bin_fails_survival():
+    runs = fake_runs()
+    for r in runs["alibi"]:
+        r["eval"]["L_bins"][10] = r["eval"]["Lw_bins"][10] + 0.06  # a bin between the three lengths
+    assert analyze.survives(FAKE_CFG, runs["alibi"]) is False
+
+
+def test_rules_useful_reads_every_length():
+    runs = fake_runs()
+    i, j = analyze.bin_index(256, 8), analyze.bin_index(64, 8)
+    for r, a, b in zip(runs["alibi"], (0.30, -0.25, 0.1), (0.01, 0.0101, 0.0099)):
+        r["eval"]["L_bins"][i] = r["eval"]["Lw_bins"][i] - a  # lower mean, interval spans zero
+        r["eval"]["L_bins"][j] = r["eval"]["Lw_bins"][j] - b  # higher mean, interval below zero
+    ok, N, *_ = analyze.useful(FAKE_CFG, runs["alibi"])
+    assert ok and N == 64
+
+
+def test_rules_survivor_with_cost_has_no_automatic_step():
+    runs = fake_runs()
+    for r in runs["alibi"]:
+        r["eval"]["L_bins"][analyze.bin_index(32, 8)] = 3.0
+    lines, v = analyze.rules(FAKE_CFG, runs)
+    assert v["cost"]["alibi"] and any("the owner decides" in x for x in lines)
+
+
+def test_report_warns_about_mixed_code():
+    runs = fake_runs()
+    runs["alibi"][0]["code_sha"] = "other"
+    assert "versions of the code" in analyze.report(FAKE_CFG, runs)
 
 
 def test_rules_control_failure_stops():
@@ -269,13 +374,13 @@ def test_rules_control_failure_stops():
         r["eval"]["L_bins"] = [4.0] * 32
     lines, v = analyze.rules(FAKE_CFG, runs)
     assert not v["C1"] and "survive" not in v
-    assert any("bug is the leading" in x for x in lines)
+    assert any("do not work even when trained" in x for x in lines)
 
 
 def test_rules_no_survivor():
     lines, v = analyze.rules(FAKE_CFG, fake_runs(survive=False))
     assert not v["survive"]["alibi"]
-    assert any("NOT SUPPORTED" in x for x in lines)
+    assert any(x.startswith("E7's claim about RoPE: NOT SUPPORTED") for x in lines)
     assert any("train at length" in x for x in lines)
 
 

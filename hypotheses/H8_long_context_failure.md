@@ -98,6 +98,32 @@ survives shows that raising `theta` alone is not enough.
   from long context on this text, so any comparison must use a retrieval task or a larger model.
 - No arm survives: do not compare normalizers. Train at length, using the control's setup.
 
+## Amendment, 2026-11-04, before any real run
+
+An independent review found these problems in the reading rules. The only data seen so far is a CPU validation on
+synthetic text, whose numbers mean nothing. This replaces the corresponding rules above.
+
+- **New C0, measurement check, per arm.** Passes if mean `Lw(2048) <= T + 0.03`. `T` has the same targets and
+  never uses a long row, while `Lw` uses long rows with far columns removed. A long-row bug would raise both `L` and `Lw`,
+  leaving `E` near zero, so `E` alone would read it as survival. An arm failing C0 is not read. **If `rope_1e4` fails C0, a
+  bug is the leading explanation: stop.**
+- **C1 now has identical targets and a narrower meaning.** Passes if `control_ctx4x` has `L(1024) <= rope_1e4 Lw(1024) +
+  0.10`. The earlier form compared different bytes. The wider margin allows for the control's batch of 16 at an untuned
+  rate. A pass means long rows can learn when trained. It does not rule out a bug, because training could absorb one; that
+  is C0's job. A fail stops the reading, as before.
+- **C3 now tests the stated mechanism directly.** The old threshold of 0.5 is about what uniform attention gives at `N =
+  512`. New measure: on rows `[448, 512)`, the mean weight per token at distances `[256, 512)` divided by the mean weight
+  per token at distances `[64, 256)`, averaged over layers. Supported if this ratio is at least 2, so far tokens outscore
+  in-range distractors. This needs a second recorded pass, on windows of length 512. Far mass stays reported.
+- **Survival also covers every bin.** In addition to the three lengths, the mean over seeds of `E` must be at most 0.05 in
+  every bin past `W`, because aliasing need not rise steadily with length.
+- **"Useful" is read at every `N` past `W`,** as the original text says. `T - L(2048)` is also reported. Stacked layers
+  give `Lw` a reach of several `W`, so `E` understates the value of long context, and the conclusion "no gain" means no gain
+  over windowed attention only.
+- **An arm that survives only with a short-context cost** has no automatic next step. The report says so and the owner decides.
+- **Limitation kept.** Running out of memory during a recorded pass can weight some windows twice in the attention
+  statistics. Each row stays normalized, so this affects only the statistics, and only if it happens.
+
 ## What it cannot show
 
 One dataset, one model size and 3 seeds. No arm is tuned. Survival at 8x training length says nothing about
