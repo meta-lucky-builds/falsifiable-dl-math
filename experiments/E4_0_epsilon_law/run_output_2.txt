@@ -1,0 +1,33 @@
+Part A: exact identities
+PASS A1_kinematics_K = 1.110e-15
+PASS A2_decomposition_D = 3.158e-16
+PASS A3_rotation_budget_R = 5.362e-15
+PASS A4_closure_C_Psi = 2.587e-14
+PASS A4_closure_C_u = 1.937e-14
+PASS A5_symmetry_scale_u = 9.732e-16
+PASS A5_symmetry_scale_r = 4.441e-16
+PASS A6_symmetry_lossscale = 2.315e-16
+PASS A7_limit_eps0_slope = 9.998e-01 expect +1
+PASS A8_limit_epsinf_slope = -9.998e-01 expect -1, to SGD with eta/eps, lam*eps
+PASS A9_paper_thm2_1_at_large_eps = 4.441e-16
+Part B: torch.optim.AdamW
+PASS B1_torch_step_matches_formula = 2.070e-16
+PASS B2_torch_N = 4.441e-16
+PASS B3_torch_Phi_law = 1.110e-15
+PASS B4_torch_Psi_law = 6.661e-16
+PASS B5_bn_scale_invariance = 7.853e-16
+PASS B6_bn_tangent_gradient = 2.385e-16
+Part C: mean-field closed forms
+PASS C1_r_eq_x0 = 5.069e-03 r=2.2248 pred=2.2361
+PASS C2_theta_eq_x0 = 2.030e-04 theta=3.2438e-03 pred=3.2444e-03 (independent of eps)
+PASS C3_omega_x0 = 1.206e-01 omega=1.759e-04 pred=2.000e-04
+PASS C1_r_eq_x1 = 2.206e-03 r=1.1156 pred=1.1181
+PASS C2_theta_eq_x1 = 1.219e-03 theta=3.2405e-03 pred=3.2444e-03 (independent of eps)
+PASS C3_omega_x1 = 1.488e-01 omega=2.554e-04 pred=3.000e-04
+PASS C1_r_eq_x10 = 6.642e-04 r=0.2031 pred=0.2033
+PASS C2_theta_eq_x10 = 1.204e-04 theta=3.2440e-03 pred=3.2444e-03 (independent of eps)
+FAIL C3_omega_x10 = 1.880e-01 omega=3.101e-04 pred=3.818e-04
+PASS C4_transit_x1 = 1.081e-02 t=2385 x=0.989
+PASS C4_transit_x2 = 3.107e-03 t=22218 x=1.994
+PASS C4_transit_x3 = 1.795e-03 t=85052 x=2.995
+FAILED: ['C3_omega_x10']

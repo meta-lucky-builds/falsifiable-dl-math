@@ -57,8 +57,10 @@ fit.
       `--tune-seeds 1`, about 168 runs, projected about 5 hours. Rerunning the same
       command resumes it, unless the runtime was reclaimed.
 - [ ] Analysis, then E1.2 score audit
-- [ ] H4, finite-epsilon Adam schedule law: derivation in progress, see
-      `hypotheses/H4_adam_epsilon_schedule_law.md` when it exists
+- [x] H4, finite-epsilon Adam law: stopped, kill fired on `omega`. See
+      `experiments/E4_0_epsilon_law/RESULTS.md`. Do not run E4.1.
+- Partial E1.1 data is in `experiments/E1_1_recall/checkpoint_partial.csv`, which
+  stops before the REM arm. It is interim data, not a result.
 
 ## Next action
 
