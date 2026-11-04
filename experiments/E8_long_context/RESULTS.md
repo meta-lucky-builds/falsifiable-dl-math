@@ -1,4 +1,4 @@
-# E8 / H8 toy run: the long-context failure is not a bug, and raising `theta` makes it worse
+# E8 / H8 toy run: the long-context failure shows no sign of a bug, and raising `theta` is not a fix
 
 Run on 1x RTX 5090, 2026-11-04, from commit `bb4635f`, in about 18 minutes: 4 arms, 2 seeds, 6000 steps, 512 test
 windows, 2.7M parameters, no non-finite steps, the same evaluation windows for every run. Unedited output:
@@ -41,19 +41,19 @@ identical targets.
   then 2.79). The control is fine at those same rows and breaks just past 1024 (1.40, then 1.52, 1.71, 1.92, ending at
   4.51). A fault tied to a position in the code could not move like that.
 - **Attention moves to distances the model never saw.** At `N = 512`, the base gives each token at distances 256 to 511
-  about 22 times the weight of a token at distances 64 to 255. By `N = 2048`, 93% of its attention mass is past
+  on average about 22 times the weight of a token at distances 64 to 255 (2.4x to 89x by layer). By `N = 2048`, 93% of its attention mass is past
   training length, averaged over layers.
-- **It is not a wraparound with a visible return.** Mean logit relative to the row's top is -13.7 at distances 64 to 256,
+- **No return is visible at this resolution.** Mean logit relative to the row's top is -13.7 at distances 64 to 256,
   then flat at -9.4, -10.2 and -9.8 further out. So unseen distances sit about 4 nats above seen distractors at every range,
   with no recurring peak at this resolution. The buckets are coarse, so narrow peaks cannot be ruled out.
-- **Raising `theta` 50x makes it worse.** In the first bin past training length, loss is 2.77 against 1.61, and `L(512)` is
-  4.76 against 3.92, in both seeds. This is softmax only. SSMax's reported extrapolation with 50x `theta` (2501.19399)
+- **Raising `theta` 50x is not a fix.** In the first bin past training length, loss is 2.77 against 1.61, and `L(512)` is
+  4.76 against 3.92, worse in both seeds, as at `N = 1024`. At `N = 2048` the seeds overlap. This is softmax only. SSMax's reported extrapolation with 50x `theta` (2501.19399)
   was a different setup and is not contradicted.
 - **ALiBi holds to 8x training length, with no cost at short context.** `L(256)` is 1.475 against 1.480. Far mass stays
   near 7%. At `N = 1024` it ties a RoPE model trained at 1024 on the same targets (1.421 against 1.419).
 - **ALiBi retrieves past its training length.** Copy accuracy at `D = 400` is 0.161 and 0.110, against 0.016 and 0.015
   for RoPE, where guessing gives 1/62 = 0.016. At `D = 800` it is 0.044 and 0.040. By `D = 1600` it is at chance. This is
-  per-byte accuracy, and getting all 4 bytes right stays rare (0.004 at `D = 400`).
+  per-byte accuracy, and getting all 4 bytes right stays rare (0.004 and 0.000 at `D = 400`).
 
 ## Reported, not read
 
@@ -65,11 +65,13 @@ identical targets.
 
 ## What I got wrong
 
-- **E7's wraparound story.** I blamed the slow frequencies of RoPE at `theta = 10000` wrapping around. A higher `theta`
-  moves those frequencies away and the failure got worse, not better, and the logits show no return.
+- **E7's `theta` story.** I blamed the slow frequencies of RoPE at `theta = 10000` wrapping around, and implied a higher
+  `theta` would help. It did not. This does not refute wraparound, because the higher `theta` barely moves those frequencies: it keeps
+  periods of 379, 862 and 1956 in the 256 to 4096 range, against 353, 628, 1117, 1987 and 3533. Wraparound remains untested.
 - **My priors.** I gave raising `theta` a 30% chance of surviving. It failed clearly. ALiBi at 75% and bug at 10% held up.
-- **Size of the effect.** The gap to GOAT's reported +0.45 bits at 2x (2601.15380) is still unexplained. Mine is +2.4
-  at 2x here and +3.8 in E7. Byte-level tokens, model size and softmax are candidates, and none is tested.
+- **Size of the effect.** The gap to GOAT's reported +0.45 bits per token at 2x (2601.15380) is still unexplained. Mine is +2.4
+  bits per byte at 2x here and +3.8 in E7. By 8x the two are similar (about +4.3 and +3.6). Byte-level tokens, model size and softmax are
+  candidates, and none is tested.
 
 ## What it cannot show
 

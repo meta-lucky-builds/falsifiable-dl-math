@@ -1,7 +1,7 @@
 # E7 / H7 results: the experiment did not test its question
 
-> **Correction, 2026-11-04.** The toy run of [E8](../E8_long_context/RESULTS.md) found no sign of a bug, and found that raising `theta` 50x makes the
-> failure worse. So the wraparound explanation below is not supported. The rest of this file stands as written at the time.
+> **Correction, 2026-11-04.** The toy run of [E8](../E8_long_context/RESULTS.md) found no sign of a bug, and found that raising `theta` 50x is not a
+> fix. So `theta` is not the setting to blame, as the explanation below implies, and wraparound itself remains untested. The rest of this file stands as written at the time.
 
 Run on rented 4x RTX 5090, 2026-11-04: 12 tuning and 16 final runs, 2.7M parameters, 20000
 steps, 4 seeds, no non-finite steps. Per-run data, pasted back from the machine:

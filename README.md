@@ -2,8 +2,8 @@
 
 **Testing mathematical changes to deep learning, under rules that let the ideas fail.**
 
-Every idea here gets a derivation, a numeric check, a kill criterion written before any run, and a comparison against
-equally tuned baselines on paired seeds. Everything stays in the repo, including the ideas that died and the mistakes I
+My standard for an idea is a derivation, a numeric check, a kill criterion written before any run, and, wherever a method is
+trained, a comparison against equally treated baselines on paired seeds. The exceptions are listed under "How I work". Everything stays in the repo, including the ideas that died and the mistakes I
 made along the way.
 
 **8 hypotheses** &nbsp;·&nbsp; **8 experiments** &nbsp;·&nbsp; **5 literature notes** &nbsp;·&nbsp; **2 experiments on real GPUs**
@@ -15,18 +15,20 @@ length. I traced that collapse from a suspected bug to a measured mechanism, and
 
 ![Loss per position for four setups. RoPE models jump from about 1.5 to about 5 bits per byte just past their training length. ALiBi stays flat near 1.44.](docs/figures/e8_loss_per_row.svg)
 
-- **It is not a bug.** With far columns removed, long rows match truncated input exactly (1.488 and 1.488), and a model
-  trained at 1024 works at 1024.
+- **There is no sign of a bug, and the damage comes through the far tokens.** Removing them from attention takes the same model from 5.13
+  back to 1.49 bits per byte, level with truncated input on the same targets (1.488 and 1.488). A model trained at 1024 also works at 1024.
 - **The break follows the training length.** The same RoPE setup breaks just past 256 when trained at 256, and just past 1024
   when trained at 1024.
-- **Attention moves to distances the model never saw.** At twice the training length, each unseen-distance token gets **22
-  times** the weight of a seen in-range distractor. At 8x, 93% of attention mass is on unseen distances.
-- **Raising RoPE's `theta` 50x makes it worse,** which refutes the wraparound explanation I first proposed.
+- **Attention moves to distances the model never saw.** At twice the training length, each unseen-distance token gets on average **22
+  times** the weight of a seen in-range distractor (2.4x to 89x by layer). At 8x, 93% of attention mass is on unseen distances.
+- **Raising RoPE's `theta` 50x is not a fix.** It is worse at 2x and 4x in both seeds (4.76 against 3.92 at 2x), and the seeds overlap by 8x.
+  Whether wraparound plays a part is still open, because both settings keep frequencies whose periods fall in the unseen range.
 - **ALiBi holds flat to 8x training length,** with no cost at short context (1.475 against 1.480). It ties a RoPE model trained
   at 1024 on identical targets (1.421 against 1.419), without ever training past 256.
-- **ALiBi still retrieves past its training length,** where RoPE trained on the same length is at chance.
+- **ALiBi still recovers bytes past its training length,** where RoPE trained on the same length is at chance: 0.135 against 0.015 per byte at
+  distance 400, where guessing gives 0.016. Getting all 4 bytes right stays rare (0.004 and 0.000 in the two seeds).
 
-![Copy accuracy against distance. At distance 400, ALiBi trained on 256 still retrieves at about 0.135, while RoPE trained on 256 is at chance.](docs/figures/e8_copy_probe.svg)
+![Copy accuracy against distance. At distance 400, ALiBi trained on 256 still recovers bytes at about 0.135, while RoPE trained on 256 is at chance.](docs/figures/e8_copy_probe.svg)
 
 > **How far to trust this.** This is a toy run: 2 seeds, 6000 steps, 18 minutes on one RTX 5090. The effects are large and appear
 > in both seeds, but my [pre-registration](hypotheses/H8_long_context_failure.md) says a toy run sets a direction only, and any
@@ -40,7 +42,7 @@ is verified mathematics, clear negative results, and a diagnosis that makes the 
 
 | # | Finding | Key number | Evidence |
 |---|---|---|---|
-| 1 | The long-context collapse is not a bug, and it follows the training length | 22x weight on unseen distances | Toy, 2 seeds |
+| 1 | The long-context collapse shows no sign of a bug, and it follows the training length | 22x mean weight on unseen distances | Toy, 2 seeds |
 | 2 | ALiBi survives to 8x training length with no short-context cost | 1.44 against 5.13 bits per byte at 8x | Toy, 2 seeds |
 | 3 | A closed-form attention temperature is correct, and still loses | Lost by 0.034 to 0.065 in accuracy | 5 seeds, pre-registered kill |
 | 4 | Plain entmax-1.5 is strongest on synthetic recall | +0.08 accuracy over softmax | 5 seeds, not the planned test |
@@ -52,8 +54,9 @@ is verified mathematics, clear negative results, and a diagnosis that makes the 
 ### 1. Why long contexts collapse
 
 This came from the failure of [H7](experiments/E7_gpu/RESULTS.md), where every attention normalizer broke at 2x training length, so
-that experiment could not test its question. The published effect is far smaller (about +0.45 bits at 2x in 2601.15380, against my
-+2.4 to +3.8), so I built [H8](hypotheses/H8_long_context_failure.md) to be able to catch a bug, not just to confirm a story.
+that experiment could not test its question. The published RoPE failure starts more slowly (about +0.45 bits per token at 2x in 2601.15380, against my +2.4 to +3.8 bits per byte, on a far
+larger model), though by 8x it reaches a similar size (about +4.3, against my +3.6). Those paper numbers come from a summary, not the PDF. That
+gap at 2x is why I built [H8](hypotheses/H8_long_context_failure.md) to be able to catch a bug, not just to confirm a story.
 
 | Setup | L(256) | L(512) | L(1024) | L(2048) | Far over near, per token |
 |---|---|---|---|---|---|
@@ -78,7 +81,7 @@ beta* = (mu - sqrt((mu^2 - 2 sigma^2 L)_+)) / sigma^2,    L = log n + kappa
 - **Correct for Gaussian scores:** above threshold at `n >= 2^10`, needle mass missed its 0.9 target by at most 0.013.
 - **Broken by heavy tails:** at `n = 2^18`, mass falls to 0.000 for Laplace scores at signal ratio 1.05, and for Student-t (3 df) at 2.0.
 - **Lost as attention at every noise level:** trained at `N = 8` and tested to `N = 256`, by 0.034 to 0.065 in accuracy at noise 0.6 and
-  0.9, and by 0.006 to 0.015 at noise 0. It ties learned SSMax at `N = 256` with no learned parameters.
+  0.9, and by 0.006 to 0.015 at noise 0. At `N = 256` it cannot be told apart from learned SSMax on 5 seeds, using no learned parameters (at noise 0.6, 0.749 against 0.776, interval [-0.065, +0.010]).
 - **Holding mass up is not enough:** at noise 0.6 and `N = 256`, entmax-1.5 and REM have nearly equal mass (0.60 and 0.59), but accuracies
   of 0.814 and 0.749.
 
@@ -140,16 +143,17 @@ and reports that *boosting* below-edge modes helps. Spectrally Targeted Muon (26
 | H5 | Does entmax's gain come from training or from readout? | **Launched, result not recorded** | [hypothesis](hypotheses/H5_sparsity_train_or_inference.md), [E5.1](experiments/E5_1_swap/RESULTS.md) |
 | H6 | In diagonal nets, is decay-then-off the same as a small init? | **Launched, partly read** | [hypothesis](hypotheses/H6_decay_budget_vs_small_init.md), [E6.0](experiments/E6_0_decay_budget/RESULTS.md) |
 | H7 | Do attention normalizers help long contexts on real text? | **Ran, did not test its question** | [hypothesis](hypotheses/H7_gpu_attention_on_real_text.md), [E7](experiments/E7_gpu/RESULTS.md) |
-| H8 | Why do models break past training length? | **Toy run done: not a bug, ALiBi holds.** Full run pending | [hypothesis](hypotheses/H8_long_context_failure.md), [E8](experiments/E8_long_context/RESULTS.md) |
+| H8 | Why do models break past training length? | **Toy run done: no sign of a bug, ALiBi holds.** Full run pending | [hypothesis](hypotheses/H8_long_context_failure.md), [E8](experiments/E8_long_context/RESULTS.md) |
 
 [LEDGER.md](LEDGER.md) has the evidence for each, plus the queue of ideas not yet pre-registered.
 
 ## How I work
 
-1. **Falsifiable first.** Each hypothesis states its mechanism, prediction, baseline and kill criterion before any run. Pre-registrations change only through
-   dated amendments, made before the data they affect.
+1. **Falsifiable first.** Each hypothesis that reaches an experiment states its mechanism, prediction, baseline and kill criterion before any run. The one
+   exception is H3, a closed-form check I recorded without a pre-registration. H2 never reached a run. Changes of substance to a pre-registration go through
+   dated amendments, made before the data they affect. Wording-only edits show in git.
 2. **Derive before training.** A formula gets a derivation or numeric identity check first.
-3. **Equal tuning.** A win against an untuned baseline does not count.
+3. **Equal tuning.** A win against an untuned baseline does not count. E3 and E4 are checks of formulas with no trained baseline, and E8 gives every arm one fixed rate, so it is not a tuned comparison.
 4. **Paired seeds and spread.** No single-seed claims. H7 applies a Holm correction to its primary tests.
 5. **Controls that can catch me.** H8 has a positive control and a truncated-input check, because the obvious explanation could have been wrong. It was, in part.
 6. **Negative results stay.** A killed hypothesis keeps its entry and its reason.
@@ -157,7 +161,7 @@ and reports that *boosting* below-edge modes helps. Spectrally Targeted Muon (26
 
 ### Mistakes I found and kept on the record
 
-- **My wraparound explanation for E7.** A higher `theta` should have helped. It made things worse.
+- **My `theta` explanation for E7.** I blamed RoPE at `theta = 10000` and implied a higher `theta` would help. It did not. Wraparound itself remains untested.
 - **E7's positional design.** I fixed RoPE at `theta = 10000` and tested normalizers on top of a failure I had not checked for. Measuring loss per row first would have caught it.
 - **E7's copy probe.** Every probe input was 2048 bytes long, so even short distances ran in the failing regime. E8 fixes this.
 - **E7's first run.** It was lost when the instance was destroyed before the results were copied. Results now print on screen, and that run is not used anywhere.
@@ -181,7 +185,7 @@ and reports that *boosting* below-edge modes helps. Spectrally Targeted Muon (26
 
 ## Reproducing
 
-Requires Python 3.9+, `torch >= 2.3`, `numpy` and `scipy`. The tests have their own runners. A [GitHub Actions workflow](.github/workflows/tests.yml), started by hand, runs them all plus a small E8 run. Its last run, at `bb4635f`, the commit that produced the E8 results, passed.
+Requires Python 3.9+, `torch >= 2.3`, `numpy` and `scipy`. The tests have their own runners. A [GitHub Actions workflow](.github/workflows/tests.yml), started by hand, runs them all plus a small E8 run. The last run to execute, at `bb4635f`, the commit that produced the E8 results, passed. Two later runs did not start because of an Actions billing block.
 
 ```bash
 python tests/test_e8.py

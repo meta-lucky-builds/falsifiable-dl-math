@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 400" role="img" aria-label="Copy accuracy against distance. At distance 400, ALiBi trained on 256 still retrieves at about 0.135, while RoPE trained on 256 is at chance.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 400" role="img" aria-label="Copy accuracy against distance. At distance 400, ALiBi trained on 256 still recovers bytes at about 0.135, while RoPE trained on 256 is at chance.">
 <style>
 .bg{fill:#fcfcfb}.t1{fill:#0b0b0b}.t2{fill:#52514e}.grid{stroke:#e4e3df}.ref{stroke:#8a8984}
 .alibi{stroke:#2a78d6}.rope_1e4{stroke:#eb6834}.rope_5e5{stroke:#1baf7a}.control_ctx4x{stroke:#eda100}
@@ -8,7 +8,7 @@ text{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:13p
 .title{font-size:16px;font-weight:600}.line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
 </style>
 <rect width="880" height="400" rx="8" class="bg"/>
-<text x="62.0" y="28.0" class="title t1" text-anchor="start">ALiBi still retrieves a planted string at distances it never trained on</text>
+<text x="62.0" y="28.0" class="title t1" text-anchor="start">ALiBi still recovers bytes of a planted string at distances it never trained on</text>
 <line x1="62.0" y1="53.0" x2="80.0" y2="53.0" class="line alibi"/>
 <text x="86.0" y="57.0" class="t2" text-anchor="start">ALiBi, trained on 256</text>
 <line x1="246.7" y1="53.0" x2="264.7" y2="53.0" class="line rope_1e4"/>

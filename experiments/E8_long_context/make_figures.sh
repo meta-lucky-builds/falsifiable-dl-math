@@ -87,10 +87,10 @@ NR > 1 { n = split($11, v, "|"); for (i = 1; i <= n; i++) sum[$1, i] += v[i]; c[
 function px(d) { return L + log(d / 32) / log(1600 / 32) * (W - L - R) }
 function py(a) { return H - B - a / 0.3 * (H - T - B) }
 END {
-  printf "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 %d %d\" role=\"img\" aria-label=\"Copy accuracy against distance. At distance 400, ALiBi trained on 256 still retrieves at about 0.135, while RoPE trained on 256 is at chance.\">\n", W, H
+  printf "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 %d %d\" role=\"img\" aria-label=\"Copy accuracy against distance. At distance 400, ALiBi trained on 256 still recovers bytes at about 0.135, while RoPE trained on 256 is at chance.\">\n", W, H
   style()
   printf "<rect width=\"%d\" height=\"%d\" rx=\"8\" class=\"bg\"/>\n", W, H
-  label(L, 28, "ALiBi still retrieves a planted string at distances it never trained on", "title t1", "start")
+  label(L, 28, "ALiBi still recovers bytes of a planted string at distances it never trained on", "title t1", "start")
   xl = L
   for (k = 1; k <= 4; k++) {
     swatch(xl, 53, order[k]); label(xl + 24, 57, name[order[k]], "t2", "start")
