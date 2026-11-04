@@ -103,6 +103,11 @@ def outcome(significant, gain, n):
     return "Inconclusive" if gain >= THRESHOLD else "Not supported"
 
 
+def provisional(n, total):
+    """Text to append to a verdict that rests on fewer seeds than the run planned."""
+    return f" PROVISIONAL: {n} of {total} seeds" if n < total else ""
+
+
 def gatekept_p3b(p3_significant, gated, softmax, alpha=ALPHA):
     """P3b: gated < softmax readout. Tested only if P3 is significant, per the H7 amendment."""
     if not p3_significant:
@@ -226,7 +231,7 @@ def report(out):
         r["sig"], r["adj"] = rej, adj
         r["outcome"] = outcome(rej, r["gain"], r["n"])
         lines.append(f"  {r['label']:53s} {r['n']:<2d} {r['gain']:+.5f}  {fmt_p(r['p']):8s} "
-                     f"{adj:<8.4f} {r['outcome']}")
+                     f"{adj:<8.4f} {r['outcome']}{provisional(r['n'], len(cfg['final_seeds']))}")
     lines.append(f"  Supported: significant under Holm. Inconclusive: not significant, mean gain at "
                  f"least {THRESHOLD}; needs new")
     lines.append("  seeds, in a separate confirmatory run not pooled with these. Not supported: not "
@@ -239,7 +244,8 @@ def report(out):
         "Inconclusive": "NOT FIRED. P1 is Inconclusive: it needs new seeds to settle.",
         "Not supported": "FIRED. The synthetic entmax gain does not transfer to this real-text setup "
                          "at this scale.",
-        "No data": "NOT JUDGED. Too few paired seeds for P1."}[p1["outcome"]])
+        "No data": "NOT JUDGED. Too few paired seeds for P1."}[p1["outcome"]]
+        + provisional(p1["n"], len(cfg["final_seeds"])))
 
     rise = paired(t.L(("softmax", "entmax15"), ctx), t.L(("softmax", "softmax"), ctx))
     rise_value = -rise["gain"]  # gain is softmax minus entmax15, so the rise is its negative

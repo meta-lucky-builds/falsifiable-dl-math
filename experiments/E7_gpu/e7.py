@@ -81,7 +81,7 @@ def make_config(mode):
         return dict(FULL)
     if mode == "smoke":
         return dict(FULL, name="smoke", steps=24, warmup=5, lrs=[3e-4, 1.2e-3],
-                    final_seeds=[2000, 2001], eval_windows=8, val_windows=8, val_every=12,
+                    final_seeds=[2000, 2001], eval_windows=64, val_windows=8, val_every=12,
                     ckpt_every=10, compile_seeds=[2000],
                     inject_crash=dict(job="final_softmax_s2000", step=15),
                     respawn_delay=2.0, poll=2.0)
@@ -395,7 +395,9 @@ def make_probes(test, ends, cfg, seed=PROBE_SEED):
 # ---------------------------------------------------------------- evaluation
 
 def is_oom(e):
-    return isinstance(e, torch.cuda.OutOfMemoryError) or "out of memory" in str(e).lower()
+    text = str(e).lower()  # the plain substring also covers "CUDA error: out of memory"
+    return (isinstance(e, torch.cuda.OutOfMemoryError) or "out of memory" in text
+            or "cublas_status_alloc_failed" in text)
 
 
 def batched(n, bs0, fn, bs_state, key, beat=lambda: None):
@@ -532,17 +534,43 @@ def step_loss(fwd, x, y):
     return F.cross_entropy(fwd(x).reshape(-1, 256), y.reshape(-1))
 
 
+def compare_grad_norms(fwd_a, fwd_b, params, x, y, rt, tol=0.01):
+    """One backward pass each on the same batch. Returns (agree?, norm a, norm b). No optimizer step,
+    and all gradients are None afterwards, so training is unaffected. A non-finite norm disagrees."""
+    params = list(params)
+    norms = []
+    for fwd in (fwd_a, fwd_b):
+        with rt.amp():
+            loss = step_loss(fwd, x, y)
+        loss.backward()
+        total = sum((p.grad.detach().double() ** 2).sum() for p in params if p.grad is not None)
+        norms.append(math.sqrt(float(total)))
+        for p in params:
+            p.grad = None
+    a, b = norms
+    return abs(a - b) <= tol * max(a, b), a, b
+
+
 def try_compile(model, x, y, rt):
-    """Returns (callable, compiled?). Any failure, or a wrong loss, falls back to the plain model."""
+    """Returns (callable, compiled?). Any failure, or a wrong loss or gradient norm, falls back to
+    the plain model."""
+    try:  # a worker compiles once per job; old entries must not reach dynamo's recompile limit
+        torch._dynamo.reset()
+    except Exception as e:
+        log(f"torch._dynamo.reset unavailable. {type(e).__name__}: {e}")
     try:
         compiled = torch.compile(model)
         with torch.no_grad(), rt.amp():
             a, b = step_loss(compiled, x, y).item(), step_loss(model, x, y).item()
         if not abs(a - b) <= 1e-2:
             raise RuntimeError(f"compiled loss {a} differs from plain loss {b}")
-        log("torch.compile: active")
+        agree, a, b = compare_grad_norms(compiled, model, model.parameters(), x, y, rt)
+        if not agree:
+            raise RuntimeError(f"compiled gradient norm {a} differs from plain norm {b}")
+        log(f"torch.compile: active; gradient norms {a:.6f} and {b:.6f}")
         return compiled, True
     except Exception as e:
+        model.zero_grad(set_to_none=True)
         log(f"torch.compile: failed, using the plain model. {type(e).__name__}: {e}")
         return model, False
 
@@ -571,7 +599,7 @@ def train_loop(job, cfg, rt, ckpt, beat=lambda: None, stop_after=None, crash_mar
     model = E7Model(cfg, job["arm"]).to(device)
     opt = make_optimizer(model, job["lr"], cfg, device)
     scaler = torch.amp.GradScaler("cuda", enabled=rt.amp_dtype == torch.float16)
-    state = dict(step=0, nonfinite=0, times=[], val_log=[], resumed_from=0)
+    state = dict(step=0, nonfinite=0, times=[], val_log=[], resumed_from=0, compiled=False)
     if ckpt.exists():
         try:
             ck = torch.load(ckpt, map_location="cpu", weights_only=True)
@@ -586,14 +614,14 @@ def train_loop(job, cfg, rt, ckpt, beat=lambda: None, stop_after=None, crash_mar
             torch.manual_seed(seed)
             model = E7Model(cfg, job["arm"]).to(device)
             opt = make_optimizer(model, job["lr"], cfg, device)
-            state = dict(step=0, nonfinite=0, times=[], val_log=[], resumed_from=0)
+            state = dict(step=0, nonfinite=0, times=[], val_log=[], resumed_from=0, compiled=False)
     train, gen, bs_state = rt.data["train"], torch.Generator(device=device), {}
     B, T, steps = cfg["batch"], cfg["ctx"], cfg["steps"]
-    fwd, compiled = model, False
+    fwd = model
     want_compile = device == "cuda" and (cfg["compile_seeds"] is None or seed in cfg["compile_seeds"])
     if want_compile and state["step"] < steps:
         x, y = get_batch(train, B, T, gen, seed, state["step"])
-        fwd, compiled = try_compile(model, x, y, rt)
+        fwd, state["compiled"] = try_compile(model, x, y, rt)
     start = state["step"]
     for step in range(start, steps):
         t0 = time.perf_counter()
@@ -607,7 +635,7 @@ def train_loop(job, cfg, rt, ckpt, beat=lambda: None, stop_after=None, crash_mar
             if fwd is model or is_oom(e):
                 raise
             log(f"compiled step failed, using the plain model. {type(e).__name__}: {e}")
-            fwd, compiled = model, False
+            fwd, state["compiled"] = model, False
             opt.zero_grad(set_to_none=True)
             loss = backward(fwd, x, y, rt, scaler)
         scaler.unscale_(opt)
@@ -635,10 +663,18 @@ def train_loop(job, cfg, rt, ckpt, beat=lambda: None, stop_after=None, crash_mar
             log("injected crash for the resume test")
             os._exit(7)
         if stop_after == done:
-            return model, state, compiled
+            return model, state, state["compiled"]
     if start < steps:
         save_checkpoint(ckpt, model, opt, scaler, state)  # evaluation never repeats training
-    return model, state, compiled
+    return model, state, state["compiled"]
+
+
+def code_sha():
+    """Hash of the code that decides results: this file and the entmax15 it imports."""
+    sha = hashlib.sha1()
+    for path in (Path(__file__), REPO / "src" / "mai" / "attention.py"):
+        sha.update(path.read_bytes())
+    return sha.hexdigest()
 
 
 def env_info(rt):
@@ -649,7 +685,7 @@ def env_info(rt):
         commit = None
     return dict(git=commit, torch=torch.__version__,
                 gpu=torch.cuda.get_device_name(0) if rt.device == "cuda" else "cpu",
-                amp=str(rt.amp_dtype), code_sha=hashlib.sha1(Path(__file__).read_bytes()).hexdigest())
+                amp=str(rt.amp_dtype), code_sha=code_sha())
 
 
 def run_job(job, out, cfg, rt, beat=lambda: None):
@@ -898,6 +934,9 @@ def worker_loop(out, cfg, slot, job_fn, poll=None):
         if job is None:
             if settled(out, cfg):
                 return 0
+            if os.getppid() != ppid:  # waiting at the barrier must not outlive the launcher either
+                log("launcher is gone; exiting")
+                return 9
             time.sleep(poll)
             continue
         jid = job["id"]
@@ -924,9 +963,6 @@ def worker_main(args):
     cfg = json.loads(paths(out)["config"].read_text())
     device = args.device
     torch.set_num_threads(2 if device == "cuda" else max(1, (os.cpu_count() or 2) // args.n_slots))
-    if device == "cuda":
-        torch.backends.cuda.matmul.allow_tf32 = True
-        torch.backends.cudnn.allow_tf32 = True
     rt = Runtime(device, load_data(cfg, Path(args.data_dir), device))
     log(f"worker {args.slot}: pid {os.getpid()}, device {device}, amp {rt.amp_dtype}, "
         f"CUDA_VISIBLE_DEVICES={os.environ.get('CUDA_VISIBLE_DEVICES')}")
@@ -1023,7 +1059,7 @@ def launch(args, mode):
     except OSError:
         print(f"ERROR: another launcher is already using {out}", file=sys.stderr)
         return 1
-    sha = hashlib.sha1(Path(__file__).read_bytes()).hexdigest()
+    sha = code_sha()
     stored_cfg = out / "config.json"
     if stored_cfg.exists():
         same = json.loads(stored_cfg.read_text()) == json.loads(json.dumps(cfg))

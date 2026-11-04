@@ -538,8 +538,9 @@ def test_three_outcomes():
     assert analyze.outcome(False, float("nan"), 0) == "No data"
 
 
-def _synthetic_report(p1, p2, p3):
-    """A full-config report with chosen per-seed gains on mean L for P1, P2 and P3."""
+def _synthetic_report(p1, p2, p3, drop=None):
+    """A full-config report with chosen per-seed gains on mean L for P1, P2 and P3. `drop` is an
+    (arm, seed) pair whose job is left out."""
     cfg = e7.make_config("full")
     seeds = cfg["final_seeds"]
     base = dict(zip(seeds, (2.00, 2.03, 1.98, 2.01)))
@@ -556,6 +557,8 @@ def _synthetic_report(p1, p2, p3):
             for arm, offsets in (("softmax", [0.0] * 4), ("entmax15", [-g for g in p1]),
                                  ("ssmax", [g - h for g, h in zip(p2, p1)]),
                                  ("entmax15_scaled", [0.0] * 4)):
+                if (arm, s) == drop:
+                    continue
                 ev = {arm: numbers(offsets)}
                 if arm == "softmax":
                     ev = {r: numbers(offsets) for r in e7.READOUTS[arm]}
@@ -590,6 +593,111 @@ def test_report_outcomes_through_the_real_tests():
     table, text = _synthetic_report(large_noisy, significant, small_noisy)
     assert table["P1"].endswith(" Inconclusive"), table["P1"]
     assert "(P1 Not supported): NOT FIRED. P1 is Inconclusive" in text
+
+
+def test_verdicts_are_provisional_when_seeds_are_missing():
+    significant = [0.0200, 0.0201, 0.0199, 0.0200]
+    large_noisy = [0.2, -0.15, 0.2, -0.15]
+    small_noisy = [0.002, -0.001, 0.002, -0.001]
+    table, text = _synthetic_report(significant, large_noisy, small_noisy)
+    assert "PROVISIONAL" not in text, "nothing is missing"
+    # entmax15 is in P1 and P2 but not in P3, so only those two lose a seed.
+    table, text = _synthetic_report(significant, large_noisy, small_noisy, drop=("entmax15", 2003))
+    assert table["P1"].endswith("PROVISIONAL: 3 of 4 seeds"), table["P1"]
+    assert table["P2"].endswith("PROVISIONAL: 3 of 4 seeds"), table["P2"]
+    assert "PROVISIONAL" not in table["P3"], table["P3"]
+    kill = next(x for x in text.splitlines() if "Kill for transfer" in x)
+    assert kill.endswith("PROVISIONAL: 3 of 4 seeds"), kill
+    assert analyze.provisional(4, 4) == "" and analyze.provisional(0, 4).endswith("0 of 4 seeds")
+
+
+def test_compiled_flag_survives_a_resume_with_no_steps_left():
+    cfg = dict(CFG, steps=12, ckpt_every=10, val_every=100, inject_crash=None)
+    rt = _runtime(cfg)
+    job = dict(id="t_flag", kind="tune", arm="softmax", seed=5, lr=1e-3)
+    with tempfile.TemporaryDirectory() as tmp:
+        ckpt = Path(tmp) / "c.pt"
+        _, state, compiled = e7.train_loop(job, cfg, rt, ckpt)
+        assert not compiled and not state["compiled"]
+        ck = torch.load(ckpt, map_location="cpu", weights_only=True)
+        assert ck["compiled"] is False, "the flag is part of the checkpoint"
+        ck["compiled"] = True  # as written by a run that trained compiled on a GPU
+        torch.save(ck, ckpt)
+        _, state, compiled = e7.train_loop(job, cfg, rt, ckpt)
+        assert compiled is True and state["compiled"] is True and state["resumed_from"] == 12
+
+
+def test_code_hash_covers_e7_and_attention():
+    import hashlib
+    first = (ROOT / "experiments" / "E7_gpu" / "e7.py").read_bytes()
+    second = (ROOT / "src" / "mai" / "attention.py").read_bytes()
+    assert e7.code_sha() == hashlib.sha1(first + second).hexdigest()
+    assert e7.code_sha() != hashlib.sha1(first).hexdigest()
+    assert e7.env_info(e7.Runtime("cpu", {}))["code_sha"] == e7.code_sha()
+
+
+def test_idle_worker_exits_when_the_launcher_is_gone():
+    real = os.getppid
+    with tempfile.TemporaryDirectory() as tmp:
+        cfg = dict(CFG, lrs=[1e-3], final_seeds=[2000])
+        out = _queue_dir(tmp, cfg)
+        for job in e7.tune_jobs(cfg):  # every job held by a live owner: this worker can only wait
+            assert e7.try_claim(out, job["id"], 1)
+
+        def never(job, beat):
+            raise AssertionError("no job may run")
+
+        values = iter([111])  # the launcher's pid at the start, then something else
+        os.getppid = lambda: next(values, 222)
+        try:
+            assert e7.worker_loop(out, cfg, 0, never, poll=0.0) == 9
+        finally:
+            os.getppid = real
+
+
+def test_is_oom_recognizes_gpu_allocation_failures():
+    for text in ("CUDA out of memory. Tried to allocate 2.00 GiB",
+                 "CUDA error: out of memory",
+                 "CUDA error: CUBLAS_STATUS_ALLOC_FAILED when calling `cublasCreate(handle)`",
+                 "DefaultCPUAllocator: can't allocate: out of memory"):
+        assert e7.is_oom(RuntimeError(text)), text
+    assert e7.is_oom(torch.cuda.OutOfMemoryError("x"))
+    for text in ("CUDA error: device-side assert triggered", "shape mismatch"):
+        assert not e7.is_oom(RuntimeError(text)), text
+
+
+def test_grad_norm_check_with_plain_callables():
+    rt = e7.Runtime("cpu", {})
+    model = build("softmax")
+    before = [p.detach().clone() for p in model.parameters()]
+    x, y = torch.randint(0, 256, (2, 16)), torch.randint(0, 256, (2, 16))
+    same = lambda inp: model(inp)  # noqa: E731
+    half = lambda inp: 0.5 * model(inp) + 0.5 * model(inp).detach()  # noqa: E731
+    near = lambda inp: 0.999 * model(inp) + 0.001 * model(inp).detach()  # noqa: E731
+
+    agree, a, b = e7.compare_grad_norms(model, same, model.parameters(), x, y, rt)
+    assert agree and a > 0 and abs(a - b) <= 1e-6 * a
+    agree, a, b = e7.compare_grad_norms(model, half, model.parameters(), x, y, rt)
+    assert not agree and abs(b / a - 0.5) < 1e-3
+    assert e7.compare_grad_norms(model, near, model.parameters(), x, y, rt)[0], "within 1 percent"
+
+    # No trace on the training state: no gradients, and parameters untouched.
+    assert all(p.grad is None for p in model.parameters())
+    assert all(torch.equal(p, q) for p, q in zip(model.parameters(), before))
+
+    # try_compile end to end, with a stand-in for the compiler: the same loss but other gradients.
+    real = torch.compile
+    try:
+        torch.compile = lambda m: half
+        fwd, compiled = e7.try_compile(model, x, y, rt)
+        assert fwd is model and not compiled, "a gradient mismatch falls back"
+        assert all(p.grad is None for p in model.parameters())
+        torch.compile = lambda m: same
+        fwd, compiled = e7.try_compile(model, x, y, rt)
+        assert fwd is same and compiled
+        assert all(p.grad is None for p in model.parameters())
+    finally:
+        torch.compile = real
 
 
 def test_mini_end_to_end_with_analysis():

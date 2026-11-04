@@ -97,7 +97,7 @@ The owner asked for less compute. This replaces the corresponding values above.
 - **Model:** width 192, still 6 layers and 6 heads, about 2.7M parameters. **Steps:** 20000, about 3.6
   passes over the training text. Warmup, batch, context and the learning-rate grid are unchanged.
 - **Final seeds:** 4, so 28 runs in total. Not fewer: with Holm correction the strictest test needs
-  a one-sided t near 4 with 4 seeds, against about 7 with 3.
+  a one-sided t of about 3.7 with 4 seeds, against about 5.3 with 3.
 - **P1, P2, P3 now have three outcomes**, since a miss at 4 seeds may only mean too little data:
   - **Supported:** significant under Holm.
   - **Inconclusive:** not significant, but mean gain at least 0.005 bits per byte. It needs new seeds
@@ -111,4 +111,5 @@ The owner asked for less compute. This replaces the corresponding values above.
 
 One dataset, one size and byte-level tokens. A win here is not a result about large language
 models. A loss does not refute the claims of 2501.19399 or 2506.16640 at their own scales and
-setups. Learned-scale arms get the same 30000 steps as the others.
+setups. Learned-scale arms get the same 20000 steps as the others. P3b is read only inside the swap
+rule, never as a claim of its own.
