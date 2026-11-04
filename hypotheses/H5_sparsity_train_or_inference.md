@@ -70,6 +70,24 @@ Kill for the premise: if `A[ent, ent] - A[soft, soft]` at `N = 256` has an inter
 includes zero on these fresh seeds at both noise levels, E1.1's entmax gain did not
 replicate, and the share is not interpreted.
 
+## Amendment, 2026-11-04, before any E5.1 run
+
+Found while implementing, with no data seen:
+
+- **My design had an error.** Retrieval does not depend only on scores under a both-layer
+  swap, because swapping the self-attention normalizer changes the memory, and so the cross
+  scores. A both-layer swap therefore mixes readout and scores. **The primary measure now
+  uses the cross-only swap for `A[soft, ent]`**, because that alone holds cross scores
+  fixed. The both-layer share is reported and not read. Retrieval in the reading is
+  measured on the scores as trained, and retrieval as read is logged too.
+- The learning-rate rule is now unconditional: every arm takes its best rate per noise from
+  the grid. The pre-registered gate is reported but not applied. This differs only if REM
+  alone prefers a higher rate.
+- Details the text left open: refit learning rate fixed at 1e-3 for every case. The premise
+  uses refit accuracy. "Under 0.01" uses the mean paired retrieval difference. If any seed's
+  denominator is below 0.02, the share is a ratio of means with a bootstrap over seeds, and
+  the output says which was used.
+
 ## Limitations stated in advance
 
 This is a small synthetic task, so an explanation here would not automatically apply to
