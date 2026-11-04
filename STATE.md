@@ -32,41 +32,37 @@ does not want to be asked about small decisions.
 ## Open question for the owner
 
 The brief named "meta-lucky-builds/ami" and also "the intr repo". `ami` does not
-exist, so this work is in `mai`. Move it if that was wrong.
+exist, so this work is in `mai`. A `/content/intr` folder from other work on the shared
+Colab runtime suggests `intr` belongs to a sibling mission. Move this if that was wrong.
 
 ## Compute
 
-Colab runtime seen 2026-11-04: CPU only, 2 cores, 12 GB RAM. Size experiments to
-fit.
+Colab: CPU only, 2 cores, 12 GB RAM. **The runtime is shared with other sessions of the
+owner** (`/content/intr`, `mechinterp`, `next` and more). Do not touch their files or
+processes. The notebook can be reset or its kernel restarted by them, so background
+processes and files in `/content/mai` are what survive: find state with `ps` and `ls`,
+never kernel variables. Wall-clock timings are not clean. If the Colab tools disappear,
+reload them with ToolSearch and call `open_colab_browser_connection`.
 
 ## Progress
 
-- [x] Literature surveys: `notes/lit/optimization_geometry.md`,
-      `notes/lit/layers_algebra.md`, `notes/lit/objectives_information.md`
-- [x] H1 and H2 pre-registered in `hypotheses/`, tracked in `LEDGER.md`
-- [x] E1.0 numeric check of the H1 formula: passed for Gaussian scores, broken by
-      heavy tails. See `experiments/E1_0_rem_numeric/RESULTS.md`
-- [x] Prior-art check: `notes/lit/prior_art_H1_H2.md`. H1 goes ahead as incremental
-      work. H2 retired without an experiment, so E2.1 will not run.
-- [x] H3, sign updates on forward gradients: no estimator advantage. See
+- [x] Literature surveys in `notes/lit/`, prior-art check in `prior_art_H1_H2.md`
+- [x] H1, REM attention temperature: **killed**. `experiments/E1_1_recall/RESULTS.md`
+- [x] H2, noise-edge gate for Muon: retired on prior art, no experiment
+- [x] H3, sign updates on forward gradients: no estimator advantage.
       `experiments/E3_0_forward_gradient_snr/RESULTS.md`
-- [x] E1.1 implementation: `src/mai/attention.py`, `tests/test_attention.py`,
-      `experiments/E1_1_recall/`. 19/19 tests passed on Colab, smoke run clean.
-- [ ] E1.1 full run on Colab: launched 2026-11-04 as a background process, with
-      output `/content/mai/e11_results.jsonl`, log `/content/mai/e11_run.log`, flag
-      `--tune-seeds 1`, about 168 runs, projected about 5 hours. Rerunning the same
-      command resumes it, unless the runtime was reclaimed.
-- [ ] Analysis, then E1.2 score audit
-- [x] H4, finite-epsilon Adam law: stopped, kill fired on `omega`. See
-      `experiments/E4_0_epsilon_law/RESULTS.md`. Do not run E4.1.
-- Partial E1.1 data is in `experiments/E1_1_recall/checkpoint_partial.csv`, which
-  stops before the REM arm. It is interim data, not a result.
+- [x] H4, finite-epsilon Adam law: stopped, kill fired on `omega`. Do not run E4.1.
+      `experiments/E4_0_epsilon_law/RESULTS.md`
+- [ ] H5, entmax on recall, training or inference: pre-registered in `hypotheses/`.
+      Implementation: `experiments/E5_1_swap/`
 
 ## Next action
 
-While E1.1 runs, check the log at most hourly and print a progress count. At each
-check, once enough cells are done, save a compact CSV (arm, seed, noise, n, acc,
-needle_mass) into `experiments/E1_1_recall/` and push, because `/content` is lost if
-the runtime is reclaimed. Do not read full JSONL files into context: they are large.
-When it finishes, run `analyze.py`, commit its output, and apply the kill rule as
-pre-registered. Do not run other Colab jobs that would disturb its timing.
+Finish H5: implement E5.1 if its files are missing, run tests and a smoke run on Colab,
+then launch in the background, writing to `/content/mai/`.
+
+No hypothesis so far has produced a win. H5 is one mechanism question, in the same
+attention line as H1. After it, per the rule above, the next thread must be a different
+kind of mathematics: take one from the queue in `LEDGER.md` that is outside attention
+and optimizer spectra, or run a new literature pass on under-searched areas (optimal
+transport losses, information bottleneck, PAC-Bayes as a loss).
