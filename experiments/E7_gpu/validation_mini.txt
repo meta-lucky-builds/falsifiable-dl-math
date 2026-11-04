@@ -1,0 +1,169 @@
+=== tests/test_e7.py log tail (last 40 lines of /content/mai/e7_tests.log) ===
+[06:35:11] t_ssmax: step 16 val 7.0681
+[06:35:12] t_entmax15: step 8 val 7.4897
+[06:35:12] t_entmax15: step 16 val 7.0680
+[06:35:13] t_entmax15: step 8 val 7.4897
+[06:35:13] t_entmax15: resumed at step 10
+[06:35:13] t_entmax15: step 16 val 7.0680
+[06:35:13] t_entmax15_scaled: step 8 val 7.4897
+[06:35:14] t_entmax15_scaled: step 16 val 7.0681
+[06:35:14] t_entmax15_scaled: step 8 val 7.4897
+[06:35:14] t_entmax15_scaled: resumed at step 10
+[06:35:14] t_entmax15_scaled: step 16 val 7.0681
+ok   test_resume_reproduces_the_uninterrupted_run_exactly (6.7s)
+[06:35:15] tune_ssmax_lr0.001_s1000: error
+Traceback (most recent call last):
+  File "/content/mai/experiments/E7_gpu/e7.py", line 905, in worker_loop
+    result = job_fn(job, Beat(paths(out)["claims"] / jid, ppid))
+  File "/content/mai/tests/test_e7.py", line 456, in fn
+    raise ValueError("always fails")
+ValueError: always fails
+
+[06:35:15] tune_ssmax_lr0.001_s1000: error
+Traceback (most recent call last):
+  File "/content/mai/experiments/E7_gpu/e7.py", line 905, in worker_loop
+    result = job_fn(job, Beat(paths(out)["claims"] / jid, ppid))
+  File "/content/mai/tests/test_e7.py", line 456, in fn
+    raise ValueError("always fails")
+ValueError: always fails
+
+[06:35:15] tune_ssmax_lr0.001_s1000: FAILED after 2 attempts
+ok   test_retry_once_then_fail_and_failed_tuning_stops_the_barrier (0.1s)
+ok   test_rope_period_and_tables (0.0s)
+ok   test_rope_score_depends_only_on_position_difference_past_training_length (0.0s)
+ok   test_selection_reads_validation_only_and_is_deterministic (0.0s)
+ok   test_shared_initial_weights_across_arms (0.0s)
+[06:35:15] worker 158005 made no progress on tune_softmax_lr0.0003_s1000 for 1800s; killing it
+ok   test_stale_claims_are_reclaimed_and_live_ones_kept (0.0s)
+ok   test_truncated_and_full_windows_use_the_same_targets (0.0s)
+ok   test_two_concurrent_workers_run_each_job_exactly_once_across_the_barrier (5.7s)
+ok   test_weight_decay_groups_exclude_normalizer_parameters (0.0s)
+0 failures, 59s
+
+(29 ok lines, 0 FAIL lines. The tracebacks and "killing it" line above are the expected output of tests that inject errors.)
+
+=== mini run log tail (last lines of /content/mai/e7_mini.log) ===
+python: Python 3.13.18 at /usr/bin/python3
+[06:36:54] run mini: output /content/mai/runs/e7_mini, 1 workers on GPUs ['']
+[06:36:54] progress: 0/8 visible jobs done, of 16; running []
+[06:37:06] worker 0 (GPU ) exited with code 7, crash 1; see /content/mai/runs/e7_mini/logs/worker_0.log
+[06:37:33] all 16 jobs done: /content/mai/runs/e7_mini/jobs
+[06:37:33] resume verified: final_softmax_s2000 continued from step 10
+report:  /content/mai/runs/e7_mini/report.txt (110 lines)
+results: /content/mai/runs/e7_mini/results_compact.csv
+
+Mini run finished.
+  report:  /content/mai/runs/e7_mini/report.txt
+  results: /content/mai/runs/e7_mini/results_compact.csv
+
+=== /content/mai/runs/e7_mini/report.txt ===
+E7 / H7 report. Configuration mini: 8 final and 8 tuning jobs. L, T, G in bits per byte.
+
+WARNINGS
+  ! entmax15 selected lr 0.0012, an edge of the grid
+  ! entmax15_scaled selected lr 0.0012, an edge of the grid
+  ! softmax selected lr 0.0012, an edge of the grid
+  ! ssmax selected lr 0.0012, an edge of the grid
+  ! configuration 'mini' with 2 seeds: a check of the code, not a result
+
+SELECTED LEARNING RATES (validation loss at context 32; * = selected)
+  arm                    0.0003      0.0012
+  softmax               7.3423      6.0672*
+  ssmax                 7.3424      6.0672*
+  entmax15              7.3422      6.0667*
+  entmax15_scaled       7.3422      6.0668*
+
+PER ARM, mean (sd) over seeds
+  arm              N     L                T                G
+  softmax          32    6.0812 (0.0348)  6.0813 (0.0348)  0.0001 (0.0000)
+  softmax          64    6.0816 (0.0347)  6.0813 (0.0348)  -0.0004 (0.0001)
+  softmax          128   6.0816 (0.0345)  6.0813 (0.0348)  -0.0003 (0.0002)
+  softmax          256   6.0818 (0.0345)  6.0813 (0.0348)  -0.0005 (0.0002)
+  ssmax            32    6.0813 (0.0346)  6.0814 (0.0346)  0.0001 (0.0000)
+  ssmax            64    6.0817 (0.0345)  6.0814 (0.0346)  -0.0003 (0.0001)
+  ssmax            128   6.0817 (0.0344)  6.0814 (0.0346)  -0.0003 (0.0002)
+  ssmax            256   6.0818 (0.0344)  6.0814 (0.0346)  -0.0004 (0.0002)
+  entmax15         32    6.0807 (0.0353)  6.0808 (0.0352)  0.0001 (0.0000)
+  entmax15         64    6.0812 (0.0352)  6.0808 (0.0352)  -0.0004 (0.0000)
+  entmax15         128   6.0810 (0.0351)  6.0808 (0.0352)  -0.0002 (0.0001)
+  entmax15         256   6.0810 (0.0352)  6.0808 (0.0352)  -0.0003 (0.0000)
+  entmax15_scaled  32    6.0807 (0.0350)  6.0808 (0.0350)  0.0000 (0.0000)
+  entmax15_scaled  64    6.0810 (0.0350)  6.0808 (0.0350)  -0.0002 (0.0000)
+  entmax15_scaled  128   6.0806 (0.0349)  6.0808 (0.0350)  0.0002 (0.0001)
+  entmax15_scaled  256   6.0804 (0.0350)  6.0808 (0.0350)  0.0003 (0.0001)
+
+COPY PROBE, accuracy per byte / all 4 correct, mean over seeds
+                    D=16            D=48            D=128           D=230
+  softmax           0.000/0.000     0.000/0.000     0.000/0.000     0.000/0.000
+  ssmax             0.000/0.000     0.000/0.000     0.000/0.000     0.000/0.000
+  entmax15          0.000/0.000     0.000/0.000     0.000/0.000     0.000/0.000
+  entmax15_scaled   0.000/0.000     0.000/0.000     0.000/0.000     0.000/0.000
+
+READOUT SWAP on softmax-trained models, no retraining, mean (sd)
+  readout          N     L                T                G
+  softmax          32    6.0812 (0.0348)  6.0813 (0.0348)  0.0001 (0.0000)
+  softmax          64    6.0816 (0.0347)  6.0813 (0.0348)  -0.0004 (0.0001)
+  softmax          128   6.0816 (0.0345)  6.0813 (0.0348)  -0.0003 (0.0002)
+  softmax          256   6.0818 (0.0345)  6.0813 (0.0348)  -0.0005 (0.0002)
+  entmax15         32    6.0806 (0.0350)  6.0807 (0.0350)  0.0001 (0.0000)
+  entmax15         64    6.0811 (0.0350)  6.0807 (0.0350)  -0.0004 (0.0000)
+  entmax15         128   6.0809 (0.0349)  6.0807 (0.0350)  -0.0002 (0.0001)
+  entmax15         256   6.0809 (0.0350)  6.0807 (0.0350)  -0.0002 (0.0000)
+  ssmax            32    6.0812 (0.0348)  6.0813 (0.0348)  0.0001 (0.0000)
+  ssmax            64    6.0816 (0.0347)  6.0813 (0.0348)  -0.0003 (0.0001)
+  ssmax            128   6.0816 (0.0345)  6.0813 (0.0348)  -0.0003 (0.0002)
+  ssmax            256   6.0817 (0.0346)  6.0813 (0.0348)  -0.0004 (0.0002)
+  gated            32    6.0812 (0.0348)  6.0813 (0.0348)  0.0001 (0.0000)
+  gated            64    6.0811 (0.0350)  6.0813 (0.0348)  0.0002 (0.0002)
+  gated            128   6.0809 (0.0349)  6.0813 (0.0348)  0.0004 (0.0001)
+  gated            256   6.0809 (0.0350)  6.0813 (0.0348)  0.0004 (0.0002)
+
+COPY PROBE by readout
+                    D=16            D=48            D=128           D=230
+  softmax           0.000/0.000     0.000/0.000     0.000/0.000     0.000/0.000
+  entmax15          0.000/0.000     0.000/0.000     0.000/0.000     0.000/0.000
+  ssmax             0.000/0.000     0.000/0.000     0.000/0.000     0.000/0.000
+  gated             0.000/0.000     0.000/0.000     0.000/0.000     0.000/0.000
+
+PRIMARY TESTS, one-sided paired t on mean L over N in [128, 256], Holm at family level 0.05
+  test                                                   n  gain      p        Holm p   decision
+  P1 entmax15 < softmax                                 2  +0.00067  0.1881   0.3762   not significant
+  P2 entmax15 < ssmax                                   2  +0.00070  0.2033   0.3762   not significant
+  P3 softmax model, entmax15 readout < softmax readout  2  +0.00080  0.1115   0.3345   not significant
+
+READING RULES, as fixed in the pre-registration
+  Kill for transfer of E1.1 (P1 not significant): FIRED. The synthetic entmax gain does not transfer to this real-text setup at this scale.
+  Readout swap: DOES NOT SUCCEED.
+    P3 significant: no. L(32) rise with the entmax15 readout: -0.00060, under 0.005: yes.
+    P3b, row-level gated < softmax readout: not tested, as P3 is not significant.
+  Practical threshold (0.005 bits/byte): no significant gain to judge.
+  G(N) rule: NOT FIRED. Mean G > 0 for entmax15_scaled@128, entmax15_scaled@256.
+    (Checked at N > 32. T(32) sees at least as much context as L(32), so G(32) measures no gain.)
+  Cost: arm, L at the shortest N, median step ms, tokens per second
+    softmax          L(32) 6.0812 (0.0348)      14.9 ms     17129 tok/s
+    ssmax            L(32) 6.0813 (0.0346)      15.2 ms     16833 tok/s
+    entmax15         L(32) 6.0807 (0.0353)      29.7 ms      9898 tok/s
+    entmax15_scaled  L(32) 6.0807 (0.0350)      20.4 ms     12521 tok/s
+
+COPY PROBE differences from softmax, accuracy per byte, paired 95% interval, secondary and uncorrected
+  ssmax           D=16: +0.000 [+0.000,+0.000] D=48: +0.000 [+0.000,+0.000]
+                  D=128: +0.000 [+0.000,+0.000] D=230: +0.000 [+0.000,+0.000]
+  entmax15        D=16: +0.000 [+0.000,+0.000] D=48: +0.000 [+0.000,+0.000]
+                  D=128: +0.000 [+0.000,+0.000] D=230: +0.000 [+0.000,+0.000]
+  entmax15_scaled D=16: +0.000 [+0.000,+0.000] D=48: +0.000 [+0.000,+0.000]
+                  D=128: +0.000 [+0.000,+0.000] D=230: +0.000 [+0.000,+0.000]
+  swap entmax15   D=16: +0.000 [+0.000,+0.000] D=48: +0.000 [+0.000,+0.000]
+                  D=128: +0.000 [+0.000,+0.000] D=230: +0.000 [+0.000,+0.000]
+  swap ssmax      D=16: +0.000 [+0.000,+0.000] D=48: +0.000 [+0.000,+0.000]
+                  D=128: +0.000 [+0.000,+0.000] D=230: +0.000 [+0.000,+0.000]
+  swap gated      D=16: +0.000 [+0.000,+0.000] D=48: +0.000 [+0.000,+0.000]
+                  D=128: +0.000 [+0.000,+0.000] D=230: +0.000 [+0.000,+0.000]
+
+LEARNED NORMALIZER PARAMETERS, mean (sd) over layers, heads and seeds
+  ssmax            s      +0.2984 (0.0076)
+  entmax15_scaled  b      +0.2909 (0.0018)
+  entmax15_scaled  delta  +0.0095 (0.0075)
+  entmax15_scaled  gamma  +1.0346 (0.0256)
+
+NOTES: parameters [33472, 33476, 33484]. Fixed SSMax uses s = 1/log(32) with n the row's valid count, as in src/mai/attention.py,
+so it equals softmax only on rows with n = 32, not on the shorter rows of an N = 32 window.

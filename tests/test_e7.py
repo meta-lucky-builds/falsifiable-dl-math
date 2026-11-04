@@ -515,6 +515,83 @@ def test_p3b_is_gatekept_by_p3_and_the_amended_rule():
     assert not analyze.swap_succeeds(True, False, False)
 
 
+def test_full_config_follows_amendment_2():
+    full = e7.make_config("full")
+    assert full["d_model"] == 192 and full["steps"] == 20000
+    assert full["final_seeds"] == [2000, 2001, 2002, 2003]
+    assert len(e7.tune_jobs(full)) + len(e7.final_jobs(full, {a: dict(lr=1e-3) for a in e7.ARMS})) == 28
+    for arm in e7.ARMS:
+        params = sum(p.numel() for p in e7.E7Model(full, arm).parameters())
+        assert 2_500_000 <= params <= 3_000_000, (arm, params)
+    assert e7.make_config("smoke")["d_model"] == 192, "smoke measures the model of the full run"
+    assert e7.make_config("smoke")["steps"] == 24 and e7.make_config("mini")["d_model"] == 32
+
+
+def test_three_outcomes():
+    assert analyze.outcome(True, 0.002, 4) == "Supported"
+    assert analyze.outcome(True, 0.02, 4) == "Supported"
+    assert analyze.outcome(False, 0.02, 4) == "Inconclusive"
+    assert analyze.outcome(False, 0.005, 4) == "Inconclusive", "at least 0.005"
+    assert analyze.outcome(False, 0.004999, 4) == "Not supported"
+    assert analyze.outcome(False, -0.02, 4) == "Not supported"
+    assert analyze.outcome(False, 0.02, 1) == "No data"
+    assert analyze.outcome(False, float("nan"), 0) == "No data"
+
+
+def _synthetic_report(p1, p2, p3):
+    """A full-config report with chosen per-seed gains on mean L for P1, P2 and P3."""
+    cfg = e7.make_config("full")
+    seeds = cfg["final_seeds"]
+    base = dict(zip(seeds, (2.00, 2.03, 1.98, 2.01)))
+
+    def numbers(offsets):
+        return dict(L={str(N): base[s] + offsets[i] for N in cfg["Ns"]}, T={"all": 2.5},
+                    copy={str(D): dict(byte=0.5, all4=0.2) for D in cfg["Ds"]})
+
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        e7.make_dirs(out)
+        (out / "config.json").write_text(json.dumps(cfg))
+        for i, s in enumerate(seeds):
+            for arm, offsets in (("softmax", [0.0] * 4), ("entmax15", [-g for g in p1]),
+                                 ("ssmax", [g - h for g, h in zip(p2, p1)]),
+                                 ("entmax15_scaled", [0.0] * 4)):
+                ev = {arm: numbers(offsets)}
+                if arm == "softmax":
+                    ev = {r: numbers(offsets) for r in e7.READOUTS[arm]}
+                    ev["entmax15"] = numbers([-g for g in p3])
+                job = dict(id=f"final_{arm}_s{s}", kind="final", arm=arm, seed=s, lr=6e-4, eval=ev,
+                           params=2715264, step_ms=10.0, tokens_per_s=1000.0, nonfinite=0)
+                (out / "jobs" / f"{job['id']}.json").write_text(json.dumps(job))
+        lines = analyze.report(out)[0]
+    table = {label: next(x for x in lines if x.startswith(f"  {label} ")) for label in ("P1", "P2", "P3")}
+    return table, "\n".join(lines)
+
+
+def test_report_outcomes_through_the_real_tests():
+    significant = [0.0200, 0.0201, 0.0199, 0.0200]  # far past any Holm threshold, with n = 4
+    large_noisy = [0.2, -0.15, 0.2, -0.15]  # mean 0.025, t about 0.25
+    small_noisy = [0.002, -0.001, 0.002, -0.001]  # mean 0.0005, t about 0.6
+
+    # P2 is entmax15 against ssmax, so its gain is entered directly.
+    table, text = _synthetic_report(significant, large_noisy, small_noisy)
+    assert table["P1"].endswith(" Supported"), table["P1"]
+    assert table["P2"].endswith(" Inconclusive"), table["P2"]
+    assert table["P3"].endswith(" Not supported"), table["P3"]
+    assert "Kill for transfer of E1.1 (P1 Not supported): NOT FIRED. P1 is Supported" in text
+    assert "Model: 6 layers, 6 heads, width 192, parameters [2715264]" in text
+    assert "Scale caveat:" in text and "than it would be at 10M" in text
+    assert "missing" not in text, "4 seeds is the expected count"
+
+    table, text = _synthetic_report(small_noisy, large_noisy, small_noisy)
+    assert table["P1"].endswith(" Not supported"), table["P1"]
+    assert "(P1 Not supported): FIRED." in text
+
+    table, text = _synthetic_report(large_noisy, significant, small_noisy)
+    assert table["P1"].endswith(" Inconclusive"), table["P1"]
+    assert "(P1 Not supported): NOT FIRED. P1 is Inconclusive" in text
+
+
 def test_mini_end_to_end_with_analysis():
     """The launcher, a crash and resume, real training and evaluation, and analyze.py."""
     with tempfile.TemporaryDirectory() as tmp:

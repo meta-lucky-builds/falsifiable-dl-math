@@ -67,9 +67,9 @@ LOG2 = math.log(2.0)
 
 FULL = dict(
     name="full", data="enwik8", data_size=ENWIK8_SIZE,
-    n_layer=6, n_head=6, d_model=384, ctx=256, batch=64, steps=30000, warmup=1000,
+    n_layer=6, n_head=6, d_model=192, ctx=256, batch=64, steps=20000, warmup=1000,
     wd=0.1, betas=[0.9, 0.99], clip=1.0, lrs=[3e-4, 6e-4, 1.2e-3],
-    tune_seed=1000, final_seeds=[2000, 2001, 2002, 2003, 2004],
+    tune_seed=1000, final_seeds=[2000, 2001, 2002, 2003],
     Ns=[256, 512, 1024, 2048], primary_Ns=[1024, 2048], keep=64,
     Ds=[128, 512, 1024, 1900], probe_len=2048, eval_windows=2048,
     val_windows=2048, val_every=3000, ckpt_every=2000, eval_tokens=131072,

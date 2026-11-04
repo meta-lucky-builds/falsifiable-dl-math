@@ -94,6 +94,15 @@ def paired(a, b):
     return dict(n=len(seeds), gain=gain, p=p)
 
 
+def outcome(significant, gain, n):
+    """The three outcomes of H7 Amendment 2. Too few paired seeds is no outcome at all."""
+    if n < 2 or not math.isfinite(gain):
+        return "No data"
+    if significant:
+        return "Supported"
+    return "Inconclusive" if gain >= THRESHOLD else "Not supported"
+
+
 def gatekept_p3b(p3_significant, gated, softmax, alpha=ALPHA):
     """P3b: gated < softmax readout. Tested only if P3 is significant, per the H7 amendment."""
     if not p3_significant:
@@ -135,7 +144,7 @@ def warnings_for(cfg, tunes, finals, selection, failed):
         w.append(f"{len(missing)} final jobs missing: " + ", ".join(f"{a}/{s}" for a, s in missing[:8]))
     if failed:
         w.append(f"{len(failed)} jobs finally failed: " + ", ".join(failed[:6]))
-    if len(cfg["final_seeds"]) < 5 or cfg["name"] != "full":
+    if cfg["name"] != "full":
         w.append(f"configuration '{cfg['name']}' with {len(cfg['final_seeds'])} seeds: "
                  f"a check of the code, not a result")
     for field in ("torch", "gpu", "amp", "git", "code_sha", "compiled"):
@@ -156,7 +165,12 @@ def report(out):
     SWAPS = (("softmax", "softmax"), ("softmax", "entmax15"), ("softmax", "ssmax"), ("softmax", "gated"))
     trained = [(a, a) for a in ARMS]
     lines = [f"E7 / H7 report. Configuration {cfg['name']}: {len(finals)} final and {len(tunes)} tuning "
-             f"jobs. L, T, G in bits per byte.", ""]
+             f"jobs. L, T, G in bits per byte.",
+             f"Model: {cfg['n_layer']} layers, {cfg['n_head']} heads, width {cfg['d_model']}, parameters "
+             f"{sorted({j['params'] for j in tunes + finals})}. {cfg['steps']} steps, "
+             f"{len(cfg['final_seeds'])} final seeds.",
+             "Scale caveat: prior claims for these methods come from larger models, so a null here is "
+             "weaker evidence against them than it would be at 10M.", ""]
 
     warns = warnings_for(cfg, tunes, finals, selection, failed)
     lines.append("WARNINGS" + ("" if warns else ": none"))
@@ -207,17 +221,25 @@ def report(out):
     adjusted, rejected = holm([r["p"] for r in results])
     lines += ["", f"PRIMARY TESTS, one-sided paired t on mean L over N in {cfg['primary_Ns']}, Holm at "
               f"family level {ALPHA}", "  test                                                   "
-              "n  gain      p        Holm p   decision"]
+              "n  gain      p        Holm p   outcome"]
     for r, adj, rej in zip(results, adjusted, rejected):
         r["sig"], r["adj"] = rej, adj
+        r["outcome"] = outcome(rej, r["gain"], r["n"])
         lines.append(f"  {r['label']:53s} {r['n']:<2d} {r['gain']:+.5f}  {fmt_p(r['p']):8s} "
-                     f"{adj:<8.4f} {'significant' if rej else 'not significant'}")
+                     f"{adj:<8.4f} {r['outcome']}")
+    lines.append(f"  Supported: significant under Holm. Inconclusive: not significant, mean gain at "
+                 f"least {THRESHOLD}; needs new")
+    lines.append("  seeds, in a separate confirmatory run not pooled with these. Not supported: not "
+                 f"significant, gain under {THRESHOLD}.")
     p1, _, p3 = results
 
     lines += ["", "READING RULES, as fixed in the pre-registration"]
-    lines.append("  Kill for transfer of E1.1 (P1 not significant): " + (
-        "NOT FIRED. P1 is significant." if p1["sig"] else
-        "FIRED. The synthetic entmax gain does not transfer to this real-text setup at this scale."))
+    lines.append("  Kill for transfer of E1.1 (P1 Not supported): " + {
+        "Supported": "NOT FIRED. P1 is Supported.",
+        "Inconclusive": "NOT FIRED. P1 is Inconclusive: it needs new seeds to settle.",
+        "Not supported": "FIRED. The synthetic entmax gain does not transfer to this real-text setup "
+                         "at this scale.",
+        "No data": "NOT JUDGED. Too few paired seeds for P1."}[p1["outcome"]])
 
     rise = paired(t.L(("softmax", "entmax15"), ctx), t.L(("softmax", "softmax"), ctx))
     rise_value = -rise["gain"]  # gain is softmax minus entmax15, so the rise is its negative
@@ -280,8 +302,7 @@ def report(out):
         for name in sorted(rows[0]) if rows else []:
             values = np.array([r[name] for r in rows], dtype=float)
             lines.append(f"  {arm:16s} {name:6s} {values.mean():+.4f} ({values.std():.4f})")
-    params = sorted({j["params"] for j in finals})
-    lines += ["", f"NOTES: parameters {params}. Fixed SSMax uses s = 1/log({cfg['ctx']}) with n the "
+    lines += ["", f"NOTES: Fixed SSMax uses s = 1/log({cfg['ctx']}) with n the "
               f"row's valid count, as in src/mai/attention.py,",
               f"so it equals softmax only on rows with n = {cfg['ctx']}, not on the shorter rows of "
               f"an N = {cfg['ctx']} window."]
