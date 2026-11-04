@@ -56,20 +56,28 @@ reload them with ToolSearch and call `open_colab_browser_connection`.
 - [ ] H5, entmax on recall, training or inference: pre-registered in `hypotheses/`.
       Implementation: `experiments/E5_1_swap/`
 
-## Current priority, set by the owner: H7 only
+- [x] H7, attention normalizers on real text: run on GPUs, **did not test its question**. Every arm
+      breaks at 2x training length. `experiments/E7_gpu/RESULTS.md`
 
-H7 (`hypotheses/H7_gpu_attention_on_real_text.md`, code in `experiments/E7_gpu/`) is built,
-reviewed and validated on CPU at commit `28974b8`. The owner runs `bash experiments/E7_gpu/run.sh`
-on rented GPUs and sends back `runs/e7/report.txt`. It has never run on a GPU. Wait for that
-report, or for smoke output to debug. Then apply the pre-registered reading rules. Do not start
-other threads until the owner says so.
+## Current priority, set by the owner: waiting on the owner
 
-## Next action, once H7 is done
+The owner limited work to H7 and has not lifted that. H7 is finished and recorded. Its likely
+cause, RoPE `theta = 10000` at training length 256, is unconfirmed and a code bug is not ruled out.
 
-E5.1 code is in `experiments/E5_1_swap/`. It runs on Colab in the background, with output
-`/content/mai/e51_results.jsonl` and log `/content/mai/e51_run.log`. If neither exists, run
-tests and a smoke run, then launch it. Rerunning the same command resumes it. When it
-finishes, run `analyze.py`, and record the reading it prints, as pre-registered.
+The owner has been asked whether to build a small diagnostic: loss per row across a long window, for
+RoPE at more than one `theta` and a scheme with no wraparound such as ALiBi. It needs its own
+pre-registration (H8) and fresh seeds. Do not start it, or any other thread, until the owner answers.
+If the owner runs anything on a rented machine, give one command for a Jupyter terminal, print results
+on screen, and never say the instance can be destroyed before the results are copied.
+
+## Next action, once the owner lifts the H7 limit
+
+E5.1 code is in `experiments/E5_1_swap/`. It was launched on Colab, with output
+`/content/mai/e51_results.jsonl` and log `/content/mai/e51_run.log`, but its verdict was never read.
+E6.0 was launched too, with log `/content/mai/e60.log`: Part A passed (about 1e-13), the rest is
+unread. Colab files may be gone. If neither E5.1 file exists, run tests and a smoke run, then launch
+it. Rerunning the same command resumes it. When it finishes, run `analyze.py`, and record the
+reading it prints, as pre-registered.
 
 No hypothesis so far has produced a win. H5 is one mechanism question, in the same
 attention line as H1. After it, per the rule above, the next thread must be a different
