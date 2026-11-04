@@ -1,4 +1,4 @@
-# mai
+# falsifiable-dl-math
 
 **Testing mathematical changes to deep learning, under rules that let the ideas fail.**
 

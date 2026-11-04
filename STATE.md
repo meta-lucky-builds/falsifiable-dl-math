@@ -34,8 +34,8 @@ does not want to be asked about small decisions.
 
 ## Open question for the owner
 
-The brief named "meta-lucky-builds/ami" and also "the intr repo". `ami` does not
-exist, so this work is in `mai`. Move this if that was wrong.
+The owner renamed this repo from `mai` to `meta-lucky-builds/falsifiable-dl-math` on 2026-11-04, which settles
+where the work lives. The Python package stays `src/mai`, and `/content/mai` paths are from before the rename.
 
 ## Compute
 
