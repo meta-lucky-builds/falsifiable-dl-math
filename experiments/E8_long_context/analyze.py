@@ -153,7 +153,8 @@ def rules(cfg, runs):
         v["complete"] = True
         return out, v
     if not v["C2"]:
-        out.append("C2 FAILED: E7's failure did not reproduce. That discrepancy comes first.")
+        out.append("C2 FAILED: the failure may need more training than a toy run has." if cfg["name"] == "toy"
+                   else "C2 FAILED: E7's failure did not reproduce. That discrepancy comes first.")
     out.append("")
     v["survive"], v["cost"], v["useful"] = {}, {}, {}
     for arm, rows in runs.items():
@@ -207,10 +208,13 @@ def table(title, header, rows):
 def report(cfg, runs):
     keep, Ns, arms = cfg["keep"], cfg["Ns"], list(runs)
     lines = [f"E8 report: {cfg['name']}", ""]
-    if cfg["name"] != "full":
+    if cfg["name"] == "toy":
+        lines += ["TOY RUN: 2 seeds and 6000 steps. It sets a direction only. Any claim about a cause or a fix, and any",
+                  "next step printed below, needs the full run first. Long-context gains are reported, not read.", ""]
+    elif cfg["name"] != "full":
         lines += ["NOT A RESULT: this is a validation run, and its numbers carry no meaning.", ""]
     n = sum(len(v) for v in runs.values())
-    expected = len(cfg["final_seeds"]) * 5
+    expected = len(cfg["final_seeds"]) * len(cfg["arms"])
     lines.append(f"Runs finished: {n} of {expected}." + ("" if n == expected else " THIS REPORT IS PARTIAL."))
     bad = sum(r["nonfinite"] for rows in runs.values() for r in rows)
     lines.append(f"Non-finite training steps: {bad}. Evaluation windows: "

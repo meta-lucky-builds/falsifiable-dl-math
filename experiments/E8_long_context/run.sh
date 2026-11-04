@@ -2,7 +2,8 @@
 # E8, one command:  bash experiments/E8_long_context/run.sh
 # Checks the machine, runs the smoke stage, runs the full experiment, prints the report.
 # Rerunning the same command resumes.
-# Options: --mini (CPU validation only), --out DIR, and any e8.py option such as --per-gpu 2.
+# Options: --toy (smallest useful run, no smoke stage), --mini (CPU validation only), --out DIR,
+# and any e8.py option such as --per-gpu 2.
 set -euo pipefail
 
 die() { echo; echo "ERROR: $*" >&2; exit 1; }
@@ -30,10 +31,12 @@ E8="$HERE/e8.py"
 ANALYZE="$HERE/analyze.py"
 OUT="$REPO/runs/e8"
 MINI=0
+TOY=0
 EXTRA=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --mini) MINI=1; shift ;;
+    --toy) TOY=1; OUT="$REPO/runs/e8_toy"; EXTRA+=("--toy"); shift ;;
     --out) [ $# -ge 2 ] || die "--out needs a directory"; OUT="$2"; shift 2 ;;
     *) EXTRA+=("$1"); shift ;;
   esac
@@ -76,16 +79,18 @@ fi
 
 "$PY" "$E8" --preflight || die "the machine check failed; the message above says why."
 
-SMOKE_OUT="${OUT}_smoke"
-echo; echo "=== Smoke stage ==="
-"$PY" "$E8" --smoke --out "$SMOKE_OUT" ${EXTRA[@]+"${EXTRA[@]}"} \
-  || die "the smoke stage failed, so the full run will not start. Logs: $SMOKE_OUT/logs"
-"$PY" "$ANALYZE" --out "$SMOKE_OUT" \
-  || die "analysis failed in the smoke stage, so the full run will not start."
-show_results "$SMOKE_OUT" > /dev/null \
-  || die "printing results failed in the smoke stage, so the full run will not start."
+if [ "$TOY" = 0 ]; then
+  SMOKE_OUT="${OUT}_smoke"
+  echo; echo "=== Smoke stage ==="
+  "$PY" "$E8" --smoke --out "$SMOKE_OUT" ${EXTRA[@]+"${EXTRA[@]}"} \
+    || die "the smoke stage failed, so the full run will not start. Logs: $SMOKE_OUT/logs"
+  "$PY" "$ANALYZE" --out "$SMOKE_OUT" \
+    || die "analysis failed in the smoke stage, so the full run will not start."
+  show_results "$SMOKE_OUT" > /dev/null \
+    || die "printing results failed in the smoke stage, so the full run will not start."
+fi
 
-echo; echo "=== Full experiment ==="
+echo; echo "=== Experiment ==="
 STATUS=0
 "$PY" "$E8" --out "$OUT" ${EXTRA[@]+"${EXTRA[@]}"} || STATUS=$?
 

@@ -124,6 +124,24 @@ synthetic text, whose numbers mean nothing. This replaces the corresponding rule
 - **Limitation kept.** Running out of memory during a recorded pass can weight some windows twice in the attention
   statistics. Each row stays normalized, so this affects only the statistics, and only if it happens.
 
+## Amendment 2, 2026-11-04, before any real run: a toy run comes first
+
+The owner asked for the smallest test that is still somewhat reliable, as quick as possible, on one RTX 5090. The toy run
+comes first, and the full design above stays available.
+
+- **Toy settings.** Same model and data. 6000 steps with 500 warmup, seeds 3000 and 3001, 512 test windows, 128 recorded
+  windows, no smoke stage, 4 workers on the one GPU. Arms: `rope_1e4`, `rope_5e5`, `alibi`, `control_ctx4x`.
+  `rope_1e4_alibi` is left out.
+- **What it can read.** C0, C1, C2 and C3, and whether an arm clearly breaks or clearly holds, because the effect being
+  chased is about 3.8 bits per byte, and the same windows and targets pair every comparison.
+- **What it cannot read.** Two seeds give a very wide interval, so "long context useful" is reported only, and small
+  differences between arms mean nothing. Survival at the 0.02 limit is a screen, not a finding. Step times are not clean,
+  because workers share the GPU.
+- **Less training changes one reading.** These models stop at a third of E7's steps, so if C2 fails, the reading is that
+  the failure may need more training. It is not read as E7's failure failing to reproduce.
+- **Next step.** The toy run sets the direction only. A claim about a cause or a fix needs the full run. A normalizer
+  comparison needs an arm that also survives the full run.
+
 ## What it cannot show
 
 One dataset, one model size and 3 seeds. No arm is tuned. Survival at 8x training length says nothing about

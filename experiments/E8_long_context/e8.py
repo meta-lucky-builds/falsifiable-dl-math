@@ -4,6 +4,7 @@
 Pre-registration: hypotheses/H8_long_context_failure.md. Linux only, like E7.
 
     python e8.py            full run on all visible GPUs; rerun to resume
+    python e8.py --toy      the smallest useful run: 4 arms, 2 seeds, 6000 steps
     python e8.py --smoke    all arms and code paths on real data, few steps; prints a projection
     python e8.py --mini     small model, synthetic data, CPU
 
@@ -48,8 +49,13 @@ E7_MAKE_CONFIG = e7.make_config  # install() replaces e7.make_config with the fu
 
 
 def make_config(mode):
-    cfg = dict(E7_MAKE_CONFIG(mode), lrs=[], lr=LR, final_seeds=[3000, 3001, 3002])
-    if mode == "smoke":
+    cfg = dict(E7_MAKE_CONFIG("full" if mode == "toy" else mode), lrs=[], lr=LR,
+               final_seeds=[3000, 3001, 3002], arms=list(ARM_SPECS))
+    if mode == "toy":
+        cfg.update(name="toy", arms=["rope_1e4", "rope_5e5", "alibi", "control_ctx4x"],
+                   final_seeds=[3000, 3001], steps=6000, warmup=500, eval_windows=512, val_windows=512,
+                   record_windows=128, Ds=[32, 64, 128, 200, 400, 800, 1600])
+    elif mode == "smoke":
         cfg.update(final_seeds=[3000, 3001], compile_seeds=[3000], record_windows=16,
                    Ds=[32, 64, 128, 200, 400, 800, 1600],
                    inject_crash=dict(job="final_rope_1e4_s3000", step=15))
@@ -326,7 +332,7 @@ def run_job(job, out, cfg, rt, beat=lambda: None):
 
 def all_jobs(cfg):
     return [dict(id=f"final_{arm}_s{seed}", kind="final", arm=arm, seed=seed, lr=cfg["lr"])
-            for arm in ARM_SPECS for seed in cfg["final_seeds"]]
+            for arm in cfg["arms"] for seed in cfg["final_seeds"]]
 
 
 def visible_jobs(out, cfg):
@@ -341,7 +347,7 @@ def ensure_selection(out, cfg):
     """E8 has no tuning. E7's launcher expects this file, so it records the fixed rate."""
     path = e7.paths(out)["selection"]
     if not path.exists():
-        e7.atomic_text(path, json.dumps({arm: dict(lr=cfg["lr"]) for arm in ARM_SPECS}))
+        e7.atomic_text(path, json.dumps({arm: dict(lr=cfg["lr"]) for arm in cfg["arms"]}))
 
 
 def code_sha():
@@ -370,11 +376,12 @@ def print_projection(out, cfg, n_slots):
     print("\n".join(lines), flush=True)
 
 
-def install():
-    """Everything E8 replaces in E7's machinery. Not done at import, so tests can compare to E7."""
+def install(toy=False):
+    """Everything E8 replaces in E7's machinery. Not done at import, so tests can compare to E7.
+    With toy, E7's "full" mode gets the toy config. Workers read their config from the output folder."""
     e7.__file__ = str(Path(__file__).resolve())  # the launcher spawns workers from this file
-    e7.ARMS = tuple(ARM_SPECS)
-    e7.make_config = make_config
+    e7.ARMS = tuple(make_config("toy" if toy else "full")["arms"])
+    e7.make_config = lambda mode: make_config("toy" if toy and mode == "full" else mode)
     e7.E7Model = E8Model
     e7.run_job = run_job
     e7.visible_jobs = visible_jobs
@@ -386,9 +393,11 @@ def install():
 
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
-    install()
+    toy = "--toy" in argv
+    argv = [a for a in argv if a != "--toy"]
+    install(toy)
     if "--out" not in argv and "--preflight" not in argv:
-        mode = "_smoke" if "--smoke" in argv else "_mini" if "--mini" in argv else ""
+        mode = "_toy" if toy else "_smoke" if "--smoke" in argv else "_mini" if "--mini" in argv else ""
         argv += ["--out", str(REPO / "runs" / f"e8{mode}")]
     return e7.main(argv)
 

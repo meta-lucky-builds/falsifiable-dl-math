@@ -280,7 +280,8 @@ def fake_run(arm, seed, L_far, Lw_far, far=0.9, ctx=32, val=1.0):
                 val_loss_final=val, eval=ev, eval_hash="abcdefgh")
 
 
-FAKE_CFG = dict(name="full", keep=8, Ns=[32, 64, 128, 256], Ds=[16, 24], final_seeds=[1, 2, 3])
+FAKE_CFG = dict(name="full", keep=8, Ns=[32, 64, 128, 256], Ds=[16, 24], final_seeds=[1, 2, 3],
+                arms=list(e8.ARM_SPECS))
 
 
 def fake_runs(base=(5.0, 2.0), control_far=(2.0, 2.0), survive=True):
@@ -360,6 +361,31 @@ def test_rules_survivor_with_cost_has_no_automatic_step():
         r["eval"]["L_bins"][analyze.bin_index(32, 8)] = 3.0
     lines, v = analyze.rules(FAKE_CFG, runs)
     assert v["cost"]["alibi"] and any("the owner decides" in x for x in lines)
+
+
+def test_toy_config_and_flag():
+    toy, full = e8.make_config("toy"), e8.make_config("full")
+    assert toy["steps"] == 6000 and toy["warmup"] == 500 and toy["final_seeds"] == [3000, 3001]
+    assert toy["eval_windows"] == 512 and len(e8.all_jobs(toy)) == 8 and len(e8.all_jobs(full)) == 15
+    for key in ("d_model", "n_layer", "n_head", "ctx", "batch", "Ns", "keep", "lr", "wd"):
+        assert toy[key] == full[key], key
+    code = ("import sys; sys.path.insert(0, %r); import e8, e7; e8.install(True); "
+            "c = e7.make_config('full'); assert c['name'] == 'toy' and len(e7.ARMS) == 4; "
+            "assert e7.make_config('mini')['name'] == 'mini'" % str(ROOT / "experiments" / "E8_long_context"))
+    r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=120)
+    assert r.returncode == 0, r.stderr[-1500:]
+    # the flag must not reach E7's parser: that would exit with 2. No GPU here, so preflight exits with 1.
+    r = subprocess.run([sys.executable, str(ROOT / "experiments" / "E8_long_context" / "e8.py"), "--toy",
+                        "--preflight"], capture_output=True, text=True, timeout=120)
+    assert r.returncode == 1, (r.returncode, r.stderr[-1500:])
+
+
+def test_toy_report_and_c2_reading():
+    cfg = dict(FAKE_CFG, name="toy", arms=["rope_1e4", "alibi", "control_ctx4x"])
+    runs = fake_runs(base=(2.0, 2.0))
+    text = analyze.report(cfg, runs)
+    assert "TOY RUN" in text and "NOT A RESULT" not in text and "may need more training" in text
+    assert "PARTIAL" not in text
 
 
 def test_report_warns_about_mixed_code():
