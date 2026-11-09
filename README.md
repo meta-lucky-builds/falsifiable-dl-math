@@ -233,6 +233,11 @@ why commits show it as a co-author. Reviews marked independent came from a separ
 3. **Read out H5 and H6,** rerunning them if their files are gone.
 4. **Try different mathematics.** Candidates from the surveys are 1-D Wasserstein logit losses and how contrastive temperature should scale with the number of negatives.
 
+## Related work
+
+- RoPE models failing past their training length, and ALiBi extrapolating, are known results: [Train Short, Test Long](https://arxiv.org/abs/2108.12409) (Press et al., 2021) introduced ALiBi for this problem. E8 replicates the effect in a small byte-level model and measures where the attention goes.
+- Entmax and adaptive entmax for long-context generalization: [Long-Context Generalization with Sparse Attention](https://arxiv.org/abs/2506.16640) (Vasylenko et al., 2025).
+
 ## License
 
 [MIT](LICENSE)
